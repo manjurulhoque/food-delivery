@@ -2,6 +2,7 @@ version: '3.7'
 
 services:
   auth-service:
+    image: auth-service:latest
     build:
       context: ./auth-service
       dockerfile: Dockerfile
@@ -24,13 +25,37 @@ services:
     networks:
       - food-network
 
+  restaurant-service:
+    image: restaurant-service:latest
+    build:
+      context: ./restaurant-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+    environment:
+      - SECRET_KEY=123456ABC
+      - DEBUG=True
+      - ALLOWED_HOSTS=*
+      - DATABASE_NAME=food-restaurants
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./restaurant-service:/app
+    networks:
+      - food-network
 
   order-service:
+    image: order-service:latest
     build:
       context: ./order-service
       dockerfile: Dockerfile
     ports:
-      - "8001:8001"
+      - "8002:8002"
     depends_on:
       - postgres
     environment:
@@ -54,6 +79,9 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=food-orders
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - food-network
 
