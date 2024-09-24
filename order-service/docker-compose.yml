@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+    environment:
+      - SECRET_KEY=123456ABC
+      - DEBUG=True
+      - ALLOWED_HOSTS=*
+      - DATABASE_NAME=food-orders
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - food-network
+
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=food-orders
+    networks:
+      - food-network
+
+networks:
+  food-network:
+    driver: bridge
+
+volumes:
+  db-data:
