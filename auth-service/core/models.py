@@ -8,5 +8,9 @@ class User(AbstractUser):
     is_restaurant = models.BooleanField(default=False)
     is_driver = models.BooleanField(default=False)
 
+    username = None
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
     def __str__(self):
         return self.email
