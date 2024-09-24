@@ -10,14 +10,14 @@ class OrderStatus(models.TextChoices):
 
 
 class Order(models.Model):
-    customer_id = models.IntegerField()
+    user_id = models.IntegerField()
     restaurant_id = models.IntegerField()
     total_price = models.FloatField()
     status = models.CharField(max_length=100, default=OrderStatus.PENDING, choices=OrderStatus.choices)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'Order {self.id}'
+        return f'Order {self.id} -> {self.status} -> user_id: {self.user_id} -> restaurant_id: {self.restaurant_id}'
 
 
 class OrderItem(models.Model):
