@@ -22,7 +22,7 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    item_name = models.CharField(max_length=255)
+    menu_id = models.IntegerField()
     quantity = models.IntegerField()
 
     def __str__(self):
