@@ -1,6 +1,30 @@
 version: '3.7'
 
 services:
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    environment:
+      - SECRET_KEY=123456ABC
+      - DEBUG=True
+      - ALLOWED_HOSTS=*
+      - DATABASE_NAME=food-users
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./auth-service:/app
+    networks:
+      - food-network
+
+
   order-service:
     build:
       context: ./order-service
@@ -20,6 +44,7 @@ services:
       - DATABASE_PORT=5432
     volumes:
       - db-data:/var/lib/postgresql/data
+      - ./order-service:/app
     networks:
       - food-network
 
