@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from kafka import KafkaConsumer
 import json
-from core.models import RestaurantOrder
+from core.models import RestaurantOrder, Restaurant
 
 
 class Command(BaseCommand):
@@ -17,6 +17,7 @@ class Command(BaseCommand):
 
         for message in consumer:
             event_data = message.value
+            print(f"Consumed event: {event_data}")
             # Create a restaurant order
             RestaurantOrder.objects.create(
                 order_id=event_data['order_id'],

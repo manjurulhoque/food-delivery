@@ -28,7 +28,7 @@ class RestaurantOrder(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     order_id = models.IntegerField()
-    restaurant_id = models.ForeignKey(Restaurant, on_delete=models.CASCADE)
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"Order {self.order_id} for Restaurant {self.restaurant_id}"
+        return f"Order {self.order_id} for Restaurant {self.restaurant.name}"
