@@ -8,7 +8,8 @@ from django.db import transaction
 # Kafka producer configuration
 producer = KafkaProducer(
     bootstrap_servers='kafka:9092',
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+    api_version=(0, 10, 1)
 )
 
 
