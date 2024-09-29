@@ -17,3 +17,8 @@ consume kafka topics:
 ```bash
 docker exec -it restaurant-service python manage.py consume_order_events
 ```
+
+start kafka consumer:
+```bash
+docker exec kafka kafka-topics.sh --list --bootstrap-server localhost:9092
+```

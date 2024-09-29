@@ -6,6 +6,9 @@ services:
     container_name: zookeeper
     ports:
       - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
     networks:
       - food-network
     volumes:
@@ -13,7 +16,7 @@ services:
       - zookeeper_log:/var/lib/zookeeper/log
 
   kafka:
-    image: bitnami/kafka
+    image: bitnami/kafka:latest
     container_name: kafka
     ports:
       - "9092:9092"
@@ -24,13 +27,43 @@ services:
       - zookeeper
     networks:
       - food-network
-    healthcheck:
-      test: [ "CMD", "kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     volumes:
       - kafka_data:/bitnami/kafka
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    restart: unless-stopped
+    hostname: kafka-exporter
+    container_name: kafka-exporter
+    command:
+      - "--kafka.server=kafka:9092"
+      - "--log.level=debug"
+    ports:
+      - "9308:9308"
+    depends_on:
+      - kafka
+    networks:
+      - food-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - food-network
+
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - prometheus
+    ports:
+      - "3001:3000"
+    networks:
+      - food-network
+    volumes:
+      - grafana-storage:/var/lib/grafana
 
   auth-service:
     image: auth-service:latest
@@ -129,3 +162,4 @@ volumes:
   zookeeper_data:
   zookeeper_log:
   kafka_data:
+  grafana-storage:
