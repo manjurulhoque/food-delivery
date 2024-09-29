@@ -8,6 +8,9 @@ services:
       - "2181:2181"
     networks:
       - food-network
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
 
   kafka:
     image: bitnami/kafka
@@ -26,6 +29,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    volumes:
+      - kafka_data:/bitnami/kafka
 
   auth-service:
     image: auth-service:latest
@@ -121,3 +126,6 @@ networks:
 
 volumes:
   db-data:
+  zookeeper_data:
+  zookeeper_log:
+  kafka_data:
