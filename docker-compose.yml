@@ -140,6 +140,21 @@ services:
     networks:
       - food-network
 
+  notification-service:
+    image: notification-service:latest
+    container_name: notification-service
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    depends_on:
+      - kafka
+    volumes:
+      - ./notification-service:/app
+    networks:
+      - food-network
+
   postgres:
     image: postgres:16
     container_name: postgres

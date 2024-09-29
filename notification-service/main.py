@@ -1,9 +1,19 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from kafka import KafkaConsumer
 import json
 import threading
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 consumer = KafkaConsumer(
     'order_placed',
@@ -30,3 +40,6 @@ def startup_event():
 @app.get("/")
 def root():
     return {"Hello": "World"}
+
+
+Instrumentator().instrument(app).expose(app)
