@@ -23,6 +23,7 @@ services:
     environment:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_BROKER_ID: 1
     depends_on:
       - zookeeper
     networks:
@@ -30,14 +31,33 @@ services:
     volumes:
       - kafka_data:/bitnami/kafka
 
+  kafbat-ui:
+    container_name: kafbat-ui
+    image: ghcr.io/kafbat/kafka-ui
+    ports:
+      - "8089:8080"
+    restart: always
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    volumes:
+      - ./kafka-ui/config.yml:/etc/kafkaui/dynamic_config.yaml
+    depends_on:
+      - kafka
+    networks:
+      - food-network
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider localhost:8089 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
   kafka-exporter:
     image: danielqsj/kafka-exporter:latest
     restart: unless-stopped
     hostname: kafka-exporter
     container_name: kafka-exporter
-    command:
-      - "--kafka.server=kafka:9092"
-      - "--log.level=debug"
+    command: --kafka.server=kafka:9092 --log.level=debug
     ports:
       - "9308:9308"
     depends_on:
