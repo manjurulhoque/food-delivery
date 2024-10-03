@@ -4,6 +4,8 @@ from .models import Order, OrderItem, OrderStatus
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db import transaction
+from django.http import JsonResponse
+
 
 # Kafka producer configuration
 producer = KafkaProducer(
@@ -11,6 +13,10 @@ producer = KafkaProducer(
     value_serializer=lambda v: json.dumps(v).encode('utf-8'),
     api_version=(0, 10, 1)
 )
+
+
+def home(request):
+    return JsonResponse({'message': 'Hello, World!'})
 
 
 class CreateOrderView(APIView):
