@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from .log_handler import CustomTCPLogstashHandler
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -129,7 +130,8 @@ LOGGING = {
             'style': '{'
         },
         'logstash': {  # Custom formatter for Logstash
-            'format': '{"@timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
+            # 'format': '{"@timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
+            'format': '{"level": "%(levelname)s", "message": "%(message)s"}',
             'style': '%',
         },
     },
@@ -141,7 +143,8 @@ LOGGING = {
         },
         'logstash': {
             'level': 'INFO',
-            'class': 'logstash.TCPLogstashHandler',
+            'class': 'auth.log_handler.CustomTCPLogstashHandler',
+            # 'class': 'logstash.LogstashHandler',
             'host': 'logstash',  # IP/name of your Logstash EC2 instance
             'port': 5044,
             'version': 1,
@@ -154,18 +157,23 @@ LOGGING = {
     'loggers': {
         # Remove the custom logger
         'django': {  # This will log messages from the Django framework
-            'handlers': ['myhandler', 'logstash'],
+            'handlers': ['myhandler'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['myhandler'],
             'level': 'INFO',
             'propagate': True,
         },
         'auth': {  # This will log messages from the app
-            'handlers': ['myhandler', 'logstash'],
+            'handlers': ['logstash'],
             'level': 'INFO',
             'propagate': True,
         },
         # You can log messages from other parts of your application by just using the root logger
         '': {  # This is the root logger
-            'handlers': ['myhandler', 'logstash'],
+            'handlers': ['myhandler'],
             'level': 'DEBUG',  # Set the logging level as needed
             'propagate': True,
         }

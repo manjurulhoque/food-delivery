@@ -20,6 +20,7 @@ services:
   logstash:
     image: docker.elastic.co/logstash/logstash:8.2.0
     container_name: logstash
+    restart: unless-stopped
     ports:
       - "5044:5044"
     volumes:
