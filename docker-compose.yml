@@ -1,6 +1,49 @@
 version: '3.7'
 
 services:
+  elasticsearch:
+    image: elasticsearch:8.8.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=admin
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - food-network
+    volumes:
+      - es_data:/usr/share/elasticsearch/data  # Persist data
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.2.0
+    container_name: logstash
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./logstash/config:/usr/share/logstash/config
+    depends_on:
+      - elasticsearch
+    networks:
+      - food-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.2.0
+    container_name: kibana
+    restart: unless-stopped
+    environment:
+      - KIBANA_SYSTEM_PASSWORD=admin
+    ports:
+      - "5601:5601"
+    networks:
+      - food-network
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
+
   traefik:
     image: "traefik:v3.2"
     container_name: "traefik"
@@ -21,8 +64,8 @@ services:
       - "traefik.http.routers.api.service=api@internal"
       - "traefik.http.routers.api.entrypoints=web"
       # define basic auth middleware for dashboard
-#      - "traefik.http.middlewares.traefik-auth.basicauth.removeheader=true"
-#      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:admin" # CHANGE PASSWORD!! (user: foobar / pwd: foobar)
+    #      - "traefik.http.middlewares.traefik-auth.basicauth.removeheader=true"
+    #      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:admin" # CHANGE PASSWORD!! (user: foobar / pwd: foobar)
     ports:
       - "8888:80" # HTTP
       - "8090:8080" # Traefik dashboard
@@ -141,7 +184,7 @@ services:
       - food-network
     labels:
       - "traefik.enable=true"
-#      - "traefik.http.routers.auth-service.rule=Host(`auth.food`)" # Use backticks here
+      # - "traefik.http.routers.auth-service.rule=Host(`auth.food`)" # Use backticks here
       - "traefik.http.routers.auth-service.rule=PathPrefix(`/api/auth/`)"
       - "traefik.http.routers.auth-service.entrypoints=web"
       - "traefik.http.services.auth-service.loadbalancer.server.port=8000"
@@ -172,7 +215,7 @@ services:
       - food-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.restaurant-service.rule=Host(`restaurant.food`)" # Use backticks here
+      - "traefik.http.routers.restaurant-service.rule=PathPrefix(`/api/restaurants/`)" # Use backticks here
       - "traefik.http.routers.restaurant-service.entrypoints=web"
       - "traefik.http.services.restaurant-service.loadbalancer.server.port=8001"
 
@@ -202,7 +245,7 @@ services:
       - food-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.order-service.rule=Host(`order.food`)" # Use backticks here
+      - "traefik.http.routers.order-service.rule=PathPrefix(`/api/orders/`)" # Use backticks here
       - "traefik.http.routers.order-service.entrypoints=web"
       - "traefik.http.services.order-service.loadbalancer.server.port=8002"
 
@@ -220,11 +263,11 @@ services:
       - ./notification-service:/app
     networks:
       - food-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.notification-service.rule=Host(`notification.food`)" # Use backticks here
-      - "traefik.http.routers.notification-service.entrypoints=web"
-      - "traefik.http.services.notification-service.loadbalancer.server.port=8003"
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.notification-service.rule=Host(`notification.food`)" # Use backticks here
+#      - "traefik.http.routers.notification-service.entrypoints=web"
+#      - "traefik.http.services.notification-service.loadbalancer.server.port=8003"
 
   postgres:
     image: postgres:16
@@ -249,3 +292,4 @@ volumes:
   zookeeper_log:
   kafka_data:
   grafana-storage:
+  es_data:

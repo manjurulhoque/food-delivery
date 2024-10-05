@@ -115,3 +115,59 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{'
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{'
+        },
+        'logstash': {  # Custom formatter for Logstash
+            'format': '{"@timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
+            'style': '%',
+        },
+    },
+    'handlers': {
+        'myhandler': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'logstash': {
+            'level': 'INFO',
+            'class': 'logstash.TCPLogstashHandler',
+            'host': 'logstash',  # IP/name of your Logstash EC2 instance
+            'port': 5044,
+            'version': 1,
+            'message_type': 'logstash',
+            'fqdn': True,
+            'tags': ['myapp'],
+            'formatter': 'logstash',
+        }
+    },
+    'loggers': {
+        # Remove the custom logger
+        'django': {  # This will log messages from the Django framework
+            'handlers': ['myhandler', 'logstash'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'auth': {  # This will log messages from the app
+            'handlers': ['myhandler', 'logstash'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        # You can log messages from other parts of your application by just using the root logger
+        '': {  # This is the root logger
+            'handlers': ['myhandler', 'logstash'],
+            'level': 'DEBUG',  # Set the logging level as needed
+            'propagate': True,
+        }
+    }
+}
