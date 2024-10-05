@@ -162,6 +162,7 @@ services:
   auth-service:
     image: auth-service:latest
     container_name: auth-service
+    restart: unless-stopped
     build:
       context: ./auth-service
       dockerfile: Dockerfile
@@ -193,6 +194,7 @@ services:
   restaurant-service:
     image: restaurant-service:latest
     container_name: restaurant-service
+    restart: unless-stopped
     build:
       context: ./restaurant-service
       dockerfile: Dockerfile
@@ -223,6 +225,7 @@ services:
   order-service:
     image: order-service:latest
     container_name: order-service
+    restart: unless-stopped
     build:
       context: ./order-service
       dockerfile: Dockerfile
@@ -253,6 +256,7 @@ services:
   notification-service:
     image: notification-service:latest
     container_name: notification-service
+    restart: unless-stopped
     build:
       context: ./notification-service
       dockerfile: Dockerfile

@@ -1,14 +1,24 @@
+import json
 import logging
+from kafka import KafkaProducer
+
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import views
 from rest_framework.response import Response
 
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, UserSerializer
 
 User = get_user_model()
 logger = logging.getLogger('auth')
+
+# Initialize the Kafka producer
+producer = KafkaProducer(
+    bootstrap_servers='kafka:9092',
+    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+    api_version=(0, 10, 1)
+)
 
 
 def home(request):
@@ -25,6 +35,7 @@ class RegisterView(views.APIView):
                 "user": user.email
             }
             logger.info(data)
+            producer.send('user.registered', {'user': UserSerializer(user).data})
             return Response({"message": "User registered successfully"})
         return Response(serializer.errors, status=400)
 

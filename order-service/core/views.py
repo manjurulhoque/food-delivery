@@ -35,7 +35,7 @@ class CreateOrderView(APIView):
                 OrderItem.objects.create(order=order, menu_id=item['menu_id'], quantity=item['quantity'])
 
             # Emit the 'order_placed' event to Kafka
-            producer.send('order_placed', {
+            producer.send('order.placed', {
                 'order_id': order.id,
                 'user_id': order.user_id,
                 'restaurant_id': order.restaurant_id,
