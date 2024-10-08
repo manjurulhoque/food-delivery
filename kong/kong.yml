@@ -1,0 +1,40 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: auth-service
+    url: http://auth-service:8000
+    connect_timeout: 60000  # 60 seconds
+    write_timeout: 60000    # 60 seconds
+    read_timeout: 60000     # 60 seconds
+    routes:
+      - name: auth-route
+        paths:
+          - /api/auth/
+  - name: restaurant-service
+    url: http://restaurant-service:8001
+    connect_timeout: 60000  # 60 seconds
+    write_timeout: 60000    # 60 seconds
+    read_timeout: 60000     # 60 seconds
+    routes:
+      - name: restaurant-route
+        paths:
+          - /api/restaurants/
+  - name: order-service
+    url: http://order-service:8002
+    connect_timeout: 60000  # 60 seconds
+    write_timeout: 60000    # 60 seconds
+    read_timeout: 60000     # 60 seconds
+    routes:
+      - name: order-route
+        paths:
+          - /api/orders/
+  - name: notification-service
+    url: http://notification-service:8003
+    connect_timeout: 60000  # 60 seconds
+    write_timeout: 60000    # 60 seconds
+    read_timeout: 60000     # 60 seconds
+    routes:
+      - name: notification-route
+        paths:
+          - /api/notifications/

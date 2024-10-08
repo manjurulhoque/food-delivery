@@ -45,6 +45,36 @@ services:
     volumes:
       - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
 
+  traefik:
+    image: "traefik:v3.2"
+    container_name: "traefik"
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true" # Enables Traefik dashboard
+      - "--providers.docker=true" # Use Docker as a provider
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80" # HTTP traffic
+      - "--accesslog=true"
+      - "--accesslog.fields.names.ClientUsername=drop"
+      - "--api.dashboard=true"
+      - "--log.level=INFO"
+      - "--metrics.prometheus=true"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`traefik.food`)"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.entrypoints=web"
+      # define basic auth middleware for dashboard
+    #      - "traefik.http.middlewares.traefik-auth.basicauth.removeheader=true"
+    #      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:admin" # CHANGE PASSWORD!! (user: foobar / pwd: foobar)
+    ports:
+      - "8888:80" # HTTP
+      - "8090:8080" # Traefik dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro" # Docker socket to watch containers
+    networks:
+      - food-network
+
   zookeeper:
     image: zookeeper:3.4.9
     container_name: zookeeper
@@ -154,6 +184,12 @@ services:
       - ./auth-service:/app
     networks:
       - food-network
+    labels:
+      - "traefik.enable=true"
+      # - "traefik.http.routers.auth-service.rule=Host(`auth.food`)" # Use backticks here
+      - "traefik.http.routers.auth-service.rule=PathPrefix(`/api/auth/`)"
+      - "traefik.http.routers.auth-service.entrypoints=web"
+      - "traefik.http.services.auth-service.loadbalancer.server.port=8000"
 
   restaurant-service:
     image: restaurant-service:latest
@@ -180,6 +216,11 @@ services:
       - ./restaurant-service:/app
     networks:
       - food-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.restaurant-service.rule=PathPrefix(`/api/restaurants/`)" # Use backticks here
+      - "traefik.http.routers.restaurant-service.entrypoints=web"
+      - "traefik.http.services.restaurant-service.loadbalancer.server.port=8001"
 
   order-service:
     image: order-service:latest
@@ -206,6 +247,11 @@ services:
       - ./order-service:/app
     networks:
       - food-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.order-service.rule=PathPrefix(`/api/orders/`)" # Use backticks here
+      - "traefik.http.routers.order-service.entrypoints=web"
+      - "traefik.http.services.order-service.loadbalancer.server.port=8002"
 
   notification-service:
     image: notification-service:latest
@@ -222,9 +268,14 @@ services:
       - ./notification-service:/app
     networks:
       - food-network
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.notification-service.rule=Host(`notification.food`)" # Use backticks here
+#      - "traefik.http.routers.notification-service.entrypoints=web"
+#      - "traefik.http.services.notification-service.loadbalancer.server.port=8003"
 
   postgres:
-    image: postgres:15
+    image: postgres:16
     container_name: postgres
     restart: unless-stopped
     environment:
@@ -235,40 +286,6 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - food-network
-
-  kong:
-    image: kong/kong-gateway:3.8.0.0
-    container_name: kong
-    restart: unless-stopped
-    depends_on:
-      - postgres
-    ports:
-      - "7000:8000"    # Proxy
-      - "7443:8443"    # Proxy (SSL)
-      - "7001:8001"    # Admin
-      - "7002:8002"    # GUI
-      - "7444:8444"    # Admin (SSL)
-    #    environment:
-    #      - KONG_DATABASE=postgres
-    #      - KONG_PG_HOST=postgres
-    #      - KONG_PG_PORT=5432
-    #      - KONG_PG_USER=postgres
-    #      - KONG_PG_PASSWORD=postgres
-    #      - KONG_PG_DATABASE=kong
-    environment:
-      - KONG_DATABASE=off       # Disable database mode
-      - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml # Use kong.yml
-      - KONG_ADMIN_LISTEN=0.0.0.0:7001
-      - KONG_ADMIN_GUI_URL=http://localhost:7002
-    volumes:
-      - ./kong/kong.yml:/etc/kong/kong.yml:ro
-    networks:
-      - food-network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9001/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 networks:
   food-network:
