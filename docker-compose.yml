@@ -248,13 +248,13 @@ services:
       - "7001:8001"    # Admin
       - "7002:8002"    # GUI
       - "7444:8444"    # Admin (SSL)
-    #    environment:
-    #      - KONG_DATABASE=postgres
-    #      - KONG_PG_HOST=postgres
-    #      - KONG_PG_PORT=5432
-    #      - KONG_PG_USER=postgres
-    #      - KONG_PG_PASSWORD=postgres
-    #      - KONG_PG_DATABASE=kong
+#    environment:
+#      - KONG_DATABASE=postgres
+#      - KONG_PG_HOST=postgres
+#      - KONG_PG_PORT=5432
+#      - KONG_PG_USER=postgres
+#      - KONG_PG_PASSWORD=postgres
+#      - KONG_PG_DATABASE=kong
     environment:
       - KONG_DATABASE=off       # Disable database mode
       - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml # Use kong.yml
