@@ -3,7 +3,7 @@ _transform: true
 
 services:
   - name: auth-service
-    url: http://auth-service:8000
+    url: http://auth-service:5000
     connect_timeout: 60000  # 60 seconds
     write_timeout: 60000    # 60 seconds
     read_timeout: 60000     # 60 seconds
@@ -12,7 +12,7 @@ services:
         paths:
           - /api/auth/
   - name: restaurant-service
-    url: http://restaurant-service:8001
+    url: http://restaurant-service:5001
     connect_timeout: 60000  # 60 seconds
     write_timeout: 60000    # 60 seconds
     read_timeout: 60000     # 60 seconds
@@ -21,7 +21,7 @@ services:
         paths:
           - /api/restaurants/
   - name: order-service
-    url: http://order-service:8002
+    url: http://order-service:5002
     connect_timeout: 60000  # 60 seconds
     write_timeout: 60000    # 60 seconds
     read_timeout: 60000     # 60 seconds
@@ -30,7 +30,7 @@ services:
         paths:
           - /api/orders/
   - name: notification-service
-    url: http://notification-service:8003
+    url: http://notification-service:5003
     connect_timeout: 60000  # 60 seconds
     write_timeout: 60000    # 60 seconds
     read_timeout: 60000     # 60 seconds

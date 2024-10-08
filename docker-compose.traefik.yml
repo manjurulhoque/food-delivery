@@ -167,7 +167,7 @@ services:
       context: ./auth-service
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "5000:5000"
     depends_on:
       - kafka
       - postgres
@@ -199,7 +199,7 @@ services:
       context: ./restaurant-service
       dockerfile: Dockerfile
     ports:
-      - "8001:8001"
+      - "5001:5001"
     depends_on:
       - kafka
       - postgres
@@ -230,7 +230,7 @@ services:
       context: ./order-service
       dockerfile: Dockerfile
     ports:
-      - "8002:8002"
+      - "5002:5002"
     depends_on:
       - kafka
       - postgres
@@ -261,7 +261,7 @@ services:
       context: ./notification-service
       dockerfile: Dockerfile
     ports:
-      - "8003:8003"
+      - "5003:5003"
     depends_on:
       - kafka
     volumes:

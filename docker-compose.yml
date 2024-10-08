@@ -137,7 +137,7 @@ services:
       context: ./auth-service
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "5000:5000"
     depends_on:
       - kafka
       - postgres
@@ -163,7 +163,7 @@ services:
       context: ./restaurant-service
       dockerfile: Dockerfile
     ports:
-      - "8001:8001"
+      - "5001:5001"
     depends_on:
       - kafka
       - postgres
@@ -189,7 +189,7 @@ services:
       context: ./order-service
       dockerfile: Dockerfile
     ports:
-      - "8002:8002"
+      - "5002:5002"
     depends_on:
       - kafka
       - postgres
@@ -215,7 +215,7 @@ services:
       context: ./notification-service
       dockerfile: Dockerfile
     ports:
-      - "8003:8003"
+      - "5003:5003"
     depends_on:
       - kafka
     volumes:
@@ -245,7 +245,7 @@ services:
     ports:
       - "7000:8000"    # Proxy
       - "7443:8443"    # Proxy (SSL)
-      - "7001:8001"    # Admin
+      - "8001:8001"    # Admin
       - "7002:8002"    # GUI
       - "7444:8444"    # Admin (SSL)
 #    environment:
@@ -258,14 +258,14 @@ services:
     environment:
       - KONG_DATABASE=off       # Disable database mode
       - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml # Use kong.yml
-      - KONG_ADMIN_LISTEN=0.0.0.0:7001
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
       - KONG_ADMIN_GUI_URL=http://localhost:7002
     volumes:
       - ./kong/kong.yml:/etc/kong/kong.yml:ro
     networks:
       - food-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9001/" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:7001/" ]
       interval: 30s
       timeout: 10s
       retries: 3

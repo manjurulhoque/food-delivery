@@ -11,7 +11,7 @@ scrape_configs:
   - job_name: 'notification-service'
     scrape_interval: 5s
     static_configs:
-      - targets: [ 'notification-service:8003' ]
+      - targets: [ 'notification-service:5003' ]
 
   - job_name: 'traefik'
     metrics_path: '/metrics'
