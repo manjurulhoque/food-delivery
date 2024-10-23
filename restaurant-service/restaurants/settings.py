@@ -110,3 +110,5 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.JSONRenderer",
     ]
 }
+
+AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL')

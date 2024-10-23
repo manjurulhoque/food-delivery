@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 from .log_handler import CustomTCPLogstashHandler
 
@@ -178,4 +179,9 @@ LOGGING = {
             'propagate': True,
         }
     }
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
