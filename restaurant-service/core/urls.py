@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    CreateRestaurantAPIView,
     RestaurantListAPIView,
     RestaurantDetailAPIView,
     RestaurantMenusAPIView,
@@ -9,6 +10,7 @@ from .views import (
 
 urlpatterns = [
     path("", RestaurantListAPIView.as_view(), name="restaurant-list"),
+    path("create/", CreateRestaurantAPIView.as_view(), name="create-restaurant"),
     path(
         "<int:restaurant_id>/",
         RestaurantDetailAPIView.as_view(),

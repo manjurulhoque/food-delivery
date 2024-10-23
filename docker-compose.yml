@@ -176,7 +176,7 @@ services:
       - DATABASE_PASSWORD=postgres
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
-      - AUTH_SERVICE_URL=http://localhost:7000/api/auth/
+      - AUTH_SERVICE_URL=http://auth-service:7000/api/auth
     volumes:
       - ./restaurant-service:/app
     networks:
@@ -203,7 +203,7 @@ services:
       - DATABASE_PASSWORD=postgres
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
-      - AUTH_SERVICE_URL=http://localhost:7000/api/auth/
+      - AUTH_SERVICE_URL=http://auth-service:7000/api/auth
     volumes:
       - ./order-service:/app
     networks:
@@ -221,7 +221,7 @@ services:
     depends_on:
       - kafka
     environment:
-      - AUTH_SERVICE_URL=http://localhost:7000/api/auth/
+      - AUTH_SERVICE_URL=http://auth-service:7000/api/auth
     volumes:
       - ./notification-service:/app
     networks:

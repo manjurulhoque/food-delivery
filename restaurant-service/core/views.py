@@ -1,9 +1,14 @@
+from django.utils.decorators import method_decorator
+
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from .models import Restaurant, Menu
 from .serializers import RestaurantSerializer, MenuSerializer
+from .decorators import is_superuser_required
 
 
 class RestaurantListAPIView(ListAPIView):
@@ -17,12 +22,17 @@ class RestaurantListAPIView(ListAPIView):
         return Response({"data": serializer.data, "status": status.HTTP_200_OK})
 
 
+@method_decorator(is_superuser_required, name='dispatch')
 class CreateRestaurantAPIView(CreateAPIView):
     model = Restaurant
     queryset = Restaurant.objects.all()
     serializer_class = RestaurantSerializer
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
+        user_id = request.user.id
+        request.data['user_id'] = user_id
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         restaurant = serializer.save()
