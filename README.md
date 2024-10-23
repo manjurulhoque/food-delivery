@@ -1,3 +1,24 @@
+Run docker-compose:
+
+```bash
+docker-compose up --build
+```
+
+Access Kong GUI:
+
+```bash
+http://localhost:7002
+```
+
+Access services via Kong:
+
+```bash
+http://localhost:7000/api/restaurants/
+http://localhost:7000/api/notifications/
+http://localhost:7000/api/orders/
+http://localhost:7000/api/auth/
+```
+
 create databases manually:
 
 ```bash
