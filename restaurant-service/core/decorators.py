@@ -29,7 +29,7 @@ def is_superuser_required(view_func):
             )
             # Add timeout to prevent hanging
             response = requests.post(
-                f"{settings.AUTH_SERVICE_URL}/verify/",  # Use the AUTH_SERVICE_URL instead of kong:7000
+                f"{settings.AUTH_SERVICE_URL}/verify/",
                 headers={"Authorization": f"Bearer {token}"},
                 timeout=5,  # 5 second timeout
             )
@@ -37,7 +37,6 @@ def is_superuser_required(view_func):
             logger.info(f"Auth service response: {response_data}")
 
         except requests.exceptions.ConnectionError as e:
-            logger.info(f"Attempting to connect to: {settings.AUTH_SERVICE_URL}/verify")
             logger.error(f"Connection error to auth service: {str(e)}")
             return JsonResponse(
                 {

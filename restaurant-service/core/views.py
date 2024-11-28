@@ -1,14 +1,20 @@
-from django.utils.decorators import method_decorator
+import logging
 
+from django.utils.decorators import method_decorator
+from django.conf import settings
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from utils.get_user_from_token import get_user_id_from_token
+
 from .models import Restaurant, Menu
 from .serializers import RestaurantSerializer, MenuSerializer
 from .decorators import is_superuser_required
+
+logger = logging.getLogger(__name__)
 
 
 class RestaurantListAPIView(ListAPIView):
@@ -27,15 +33,19 @@ class CreateRestaurantAPIView(CreateAPIView):
     model = Restaurant
     queryset = Restaurant.objects.all()
     serializer_class = RestaurantSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        user_id = request.user.id
+        user_id, error_response = get_user_id_from_token(request)
+        if error_response:
+            return error_response
+
         request.data['user_id'] = user_id
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         restaurant = serializer.save()
+        logger.info("Restaurant created successfully.")
         return Response({"data": serializer.data, "status": status.HTTP_201_CREATED})
 
 
