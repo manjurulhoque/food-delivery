@@ -5,6 +5,7 @@ from .views import (
     RestaurantListAPIView,
     RestaurantDetailAPIView,
     RestaurantMenusAPIView,
+    RestaurantMenuCreateAPIView,
     MenuDetail,
 )
 
@@ -18,6 +19,11 @@ urlpatterns = [
     ),
     path(
         "<int:restaurant_id>/menus/", RestaurantMenusAPIView.as_view(), name="menu-list"
+    ),
+    path(
+        "<int:restaurant_id>/menus/create/",
+        RestaurantMenuCreateAPIView.as_view(),
+        name="create-menu",
     ),
     path(
         "<int:restaurant_id>/menus/<int:menu_id>/",
