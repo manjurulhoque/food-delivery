@@ -3,8 +3,11 @@ import json
 from .models import Order, OrderItem, OrderStatus
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 from django.db import transaction
 from django.http import JsonResponse
+
+from utils.get_user_from_token import get_user_id_from_token
 
 
 # Kafka producer configuration
@@ -21,11 +24,15 @@ def home(request):
 
 class CreateOrderView(APIView):
     def post(self, request):
+        user_id, error_response = get_user_id_from_token(request)
+        if error_response:
+            return error_response
+        
         data = request.data
         with transaction.atomic():
             # Create Order
             order = Order.objects.create(
-                user_id=data['user_id'],
+                user_id=user_id,
                 restaurant_id=data['restaurant_id'],
                 total_price=data['total_price'],
                 status=OrderStatus.PENDING
@@ -44,4 +51,4 @@ class CreateOrderView(APIView):
             })
 
         # Return response
-        return Response({"order_id": order.id, "status": "Order placed successfully"})
+        return Response({"order_id": order.id, "success": True}, status=status.HTTP_201_CREATED)

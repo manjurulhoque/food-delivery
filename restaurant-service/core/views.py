@@ -25,7 +25,7 @@ class RestaurantListAPIView(ListAPIView):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        return Response({"data": serializer.data, "status": status.HTTP_200_OK})
+        return Response({"data": serializer.data, "success": True}, status=status.HTTP_200_OK)
 
 
 @method_decorator(is_superuser_required, name='dispatch')
@@ -46,7 +46,7 @@ class CreateRestaurantAPIView(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         restaurant = serializer.save()
         logger.info("Restaurant created successfully.")
-        return Response({"data": serializer.data, "status": status.HTTP_201_CREATED})
+        return Response({"data": serializer.data, "success": True}, status=status.HTTP_201_CREATED)
 
 
 class RestaurantDetailAPIView(RetrieveAPIView):
@@ -62,7 +62,7 @@ class RestaurantDetailAPIView(RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response({"data": serializer.data, "status": status.HTTP_200_OK})
+        return Response({"data": serializer.data, "success": True}, status=status.HTTP_200_OK)
 
 
 class RestaurantMenusAPIView(ListAPIView):
@@ -76,7 +76,7 @@ class RestaurantMenusAPIView(ListAPIView):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        return Response({"data": serializer.data, "status": status.HTTP_200_OK})
+        return Response({"data": serializer.data, "success": True}, status=status.HTTP_200_OK)
     
 
 class RestaurantMenuCreateAPIView(CreateAPIView):
@@ -92,14 +92,14 @@ class RestaurantMenuCreateAPIView(CreateAPIView):
         restaurant_id = self.kwargs.get("restaurant_id")
         restaurant = Restaurant.objects.get(id=restaurant_id)
         if restaurant.user_id != user_id:
-            return Response({"error": "You are not authorized to create menu for this restaurant.", "status": status.HTTP_403_FORBIDDEN})
+            return Response({"error": "You are not authorized to create menu for this restaurant.", "success": False}, status=status.HTTP_403_FORBIDDEN)
         
         request.data['restaurant'] = restaurant_id
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         menu = serializer.save()
         logger.info("Menu created successfully.")
-        return Response({"data": serializer.data, "status": status.HTTP_201_CREATED})
+        return Response({"data": serializer.data, "success": True}, status=status.HTTP_201_CREATED)
 
 
 class MenuDetail(RetrieveAPIView):
@@ -115,4 +115,4 @@ class MenuDetail(RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response({"data": serializer.data, "status": status.HTTP_200_OK})
+        return Response({"data": serializer.data, "success": True}, status=status.HTTP_200_OK)

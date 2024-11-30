@@ -4,6 +4,12 @@ Run docker-compose:
 docker-compose up --build
 ```
 
+Access kafka-ui
+
+```bash
+localhost:8089
+```
+
 Access Kong GUI:
 
 ```bash
@@ -43,7 +49,7 @@ consume kafka topics:
 docker exec -it restaurant-service python manage.py consume_order_events
 ```
 
-start kafka consumer:
+kafka topic list:
 
 ```bash
 docker exec kafka kafka-topics.sh --list --bootstrap-server localhost:9092
