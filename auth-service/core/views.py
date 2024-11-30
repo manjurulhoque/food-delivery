@@ -59,3 +59,11 @@ def verify_token(request):
     if not user:
         return Response({"user": None})
     return Response({"data": {"user": UserSerializer(user).data}})
+
+
+@api_view(["GET"])
+def get_user(request, user_id):
+    user = User.objects.filter(id=user_id).first()
+    if user is None:
+        return Response({"error": "User not found"}, status=404)
+    return Response({"user": UserSerializer(user).data})
