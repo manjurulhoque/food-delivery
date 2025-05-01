@@ -58,6 +58,7 @@ async def consume_order_placed():
             order_id = message.value.get('order_id')
             user_details = await get_user_details(user_id)
             logger.info("User details: %s", user_details)
+            # Send notification to user
     except Exception as e:
         logger.error("Error in order.placed consumer: %s", str(e))
     finally:

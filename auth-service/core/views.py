@@ -18,7 +18,7 @@ logger = logging.getLogger("auth")
 producer = KafkaProducer(
     bootstrap_servers="kafka:9092",
     value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-    api_version=(0, 10, 1),
+    api_version=(2, 0, 0),
 )
 
 

@@ -3,11 +3,13 @@ from kafka import KafkaConsumer, KafkaProducer
 import json
 import logging
 
+from core.models import RestaurantOrder
+
 # Kafka producer configuration
 producer = KafkaProducer(
     bootstrap_servers='kafka:9092',
     value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-    api_version=(0, 10, 1)
+    api_version=(2, 0, 0)
 )
 
 # Configure logger
@@ -44,18 +46,18 @@ class Command(BaseCommand):
         for message in consumer:
             event_data = message.value
             logger.info(f"Consumed event: {event_data}")
-            # Emit the 'order.confirmed' event to Kafka
-            # producer.send('order.confirmed', {
-            #     'order_id': event_data['order_id'],
-            #     'restaurant_id': event_data['restaurant_id']
-            # })
-            # # Create a restaurant order
-            # try:
-            #     RestaurantOrder.objects.create(
-            #         order_id=event_data['order_id'],
-            #         restaurant_id=event_data['restaurant_id'],
-            #     )
-            # except Exception as e:
-            #     logger.error(f"Failed to create order: {e}")
-            #     continue
-            # logger.info(f"Restaurant confirmed order {event_data['order_id']}")
+            # Create a restaurant order
+            try:
+                RestaurantOrder.objects.create(
+                    order_id=event_data['order_id'],
+                    restaurant_id=event_data['restaurant_id'],
+                )
+                # Emit the 'order.confirmed' event to Kafka
+                producer.send('order.confirmed', {
+                    'order_id': event_data['order_id'],
+                    'restaurant_id': event_data['restaurant_id']
+                })
+            except Exception as e:
+                logger.error(f"Failed to create order: {e}")
+                continue
+            logger.info(f"Restaurant confirmed order {event_data['order_id']}")
