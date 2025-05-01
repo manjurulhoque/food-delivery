@@ -5,3 +5,4 @@ kafka-python==2.0.2
 psycopg2-binary==2.9.9
 PyJWT==2.10.1
 sqlparse==0.5.1
+requests==2.32.3

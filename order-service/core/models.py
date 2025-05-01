@@ -5,9 +5,10 @@ from django.utils.translation import gettext_lazy as _
 class OrderStatus(models.TextChoices):
     PENDING = 'PENDING', _('Pending')
     CONFIRMED = 'CONFIRMED', _('Confirmed')
+    PREPARING = 'PREPARING', _('Preparing')
     CANCELED = 'CANCELED', _('Canceled')
     DELIVERED = 'DELIVERED', _('Delivered')
-
+    REFUNDED = 'REFUNDED', _('Refunded')
 
 class Order(models.Model):
     user_id = models.IntegerField()

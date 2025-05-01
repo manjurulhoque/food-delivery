@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from kafka import KafkaConsumer, KafkaProducer
 import json
-from core.models import RestaurantOrder, Restaurant
+import logging
 
 # Kafka producer configuration
 producer = KafkaProducer(
@@ -10,33 +10,52 @@ producer = KafkaProducer(
     api_version=(0, 10, 1)
 )
 
+# Configure logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Silence all Kafka-related logs
+logging.getLogger('kafka').setLevel(logging.INFO)
+logging.getLogger('kafka.conn').setLevel(logging.INFO)
+logging.getLogger('kafka.client').setLevel(logging.INFO)
+logging.getLogger('kafka.cluster').setLevel(logging.INFO)
+logging.getLogger('kafka.consumer').setLevel(logging.INFO)
+logging.getLogger('kafka.consumer.group').setLevel(logging.INFO)
+logging.getLogger('kafka.coordinator').setLevel(logging.INFO)
+logging.getLogger('kafka.protocol').setLevel(logging.INFO)
+logging.getLogger('kafka.producer').setLevel(logging.INFO)
+
+logger = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
     help = 'Consume Kafka events from the order_placed topic'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.SUCCESS('Consuming order events...'))
+        logger.info('Consuming order events...')
         consumer = KafkaConsumer(
-            'order_placed',
+            'order.placed',
             bootstrap_servers=['kafka:9092'],
             value_deserializer=lambda x: json.loads(x.decode('utf-8'))
         )
 
         for message in consumer:
             event_data = message.value
-            print(f"Consumed event: {event_data}")
-            # Emit the 'order_confirmed' event to Kafka
-            producer.send('order_confirmed', {
-                'order_id': event_data['order_id'],
-                'restaurant_id': event_data['restaurant_id']
-            })
-            # Create a restaurant order
-            try:
-                RestaurantOrder.objects.create(
-                    order_id=event_data['order_id'],
-                    restaurant_id=event_data['restaurant_id'],
-                )
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f"Failed to create order: {e}"))
-                continue
-            self.stdout.write(self.style.SUCCESS(f"Restaurant confirmed order {event_data['order_id']}"))
+            logger.info(f"Consumed event: {event_data}")
+            # Emit the 'order.confirmed' event to Kafka
+            # producer.send('order.confirmed', {
+            #     'order_id': event_data['order_id'],
+            #     'restaurant_id': event_data['restaurant_id']
+            # })
+            # # Create a restaurant order
+            # try:
+            #     RestaurantOrder.objects.create(
+            #         order_id=event_data['order_id'],
+            #         restaurant_id=event_data['restaurant_id'],
+            #     )
+            # except Exception as e:
+            #     logger.error(f"Failed to create order: {e}")
+            #     continue
+            # logger.info(f"Restaurant confirmed order {event_data['order_id']}")

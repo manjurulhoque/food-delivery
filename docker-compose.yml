@@ -65,10 +65,17 @@ services:
     ports:
       - "9092:9092"
     environment:
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
       KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CFG_BROKER_ID: 1
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_BROKER_ID: "1"
     depends_on:
       - zookeeper
     networks:
@@ -76,7 +83,7 @@ services:
     volumes:
       - kafka_data:/bitnami/kafka
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server kafka:9092 --list"]
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -147,7 +154,7 @@ services:
       - "5000:5000"
     depends_on:
       kafka:
-        condition: service_healthy
+        condition: service_started
       postgres:
         condition: service_started
     environment:
@@ -159,10 +166,23 @@ services:
       - DATABASE_PASSWORD=postgres
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CLIENT_ID=auth-service
+      - KAFKA_SECURITY_PROTOCOL=PLAINTEXT
+      - KAFKA_SOCKET_TIMEOUT_MS=60000
+      - KAFKA_REQUEST_TIMEOUT_MS=30000
+      - KAFKA_RETRY_BACKOFF_MS=1000
+      - KAFKA_MAX_RETRIES=3
     volumes:
       - ./auth-service:/app
     networks:
       - food-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   restaurant-service:
     image: restaurant-service:latest
@@ -186,6 +206,9 @@ services:
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - AUTH_SERVICE_URL=http://auth-service:5000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CLIENT_ID=restaurant-service
+      - KAFKA_GROUP_ID=restaurant-service-group
     volumes:
       - ./restaurant-service:/app
     networks:
@@ -213,6 +236,9 @@ services:
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - AUTH_SERVICE_URL=http://auth-service:5000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CLIENT_ID=order-service
+      - KAFKA_GROUP_ID=order-service-group
     volumes:
       - ./order-service:/app
     networks:
@@ -231,6 +257,9 @@ services:
       - kafka
     environment:
       - AUTH_SERVICE_URL=http://auth-service:5000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CLIENT_ID=notification-service
+      - KAFKA_GROUP_ID=notification-service-group
     volumes:
       - ./notification-service:/app
     networks:

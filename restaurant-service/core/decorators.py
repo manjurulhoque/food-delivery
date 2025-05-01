@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from functools import wraps
 from django.conf import settings
 import logging
+from rest_framework import status
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ def is_superuser_required(view_func):
                     "success": False,
                     "message": "Authorization header missing or invalid.",
                 },
-                status=401,
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         token = auth_header.split(" ")[1]
@@ -43,7 +44,7 @@ def is_superuser_required(view_func):
                     "success": False,
                     "message": "Unable to connect to authentication service. Please try again later.",
                 },
-                status=503,
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         except requests.exceptions.Timeout:
             logger.error("Auth service request timed out")
@@ -52,13 +53,13 @@ def is_superuser_required(view_func):
                     "success": False,
                     "message": "Authentication service timed out. Please try again later.",
                 },
-                status=503,
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         except requests.exceptions.RequestException as e:
             logger.error(f"Auth service request failed: {str(e)}")
             return JsonResponse(
                 {"success": False, "message": "Authentication service is unavailable."},
-                status=503,
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
         if response.status_code != 200 or not response_data.get("data", {}).get(
@@ -69,7 +70,7 @@ def is_superuser_required(view_func):
                     "success": False,
                     "message": "You are not authorized to perform this action.",
                 },
-                status=403,
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         return view_func(request, *args, **kwargs)

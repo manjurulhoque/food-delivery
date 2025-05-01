@@ -1,3 +1,5 @@
+A micro-service based on Choreography-based Saga pattern
+
 Run docker-compose:
 
 ```bash
