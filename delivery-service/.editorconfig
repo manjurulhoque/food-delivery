@@ -1,0 +1,10 @@
+root = true
+[*.ts]
+indent_style = space
+indent_size = 4
+charset = utf-8
+
+[*.tsx]
+indent_style = space
+indent_size = 4
+charset = utf-8

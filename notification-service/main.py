@@ -26,25 +26,26 @@ app.add_middleware(
 
 # Configure logger
 logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('aiokafka').setLevel(logging.INFO)  # Reduce debug logs
+logging.getLogger("aiokafka").setLevel(logging.INFO)  # Reduce debug logs
 logger = logging.getLogger(__name__)
 
 # Initialize Kafka producer and consumers
 aioproducer = AIOKafkaProducer(bootstrap_servers=KAFKA_INSTANCE)
 order_placed_consumer = AIOKafkaConsumer(
-    'order.placed', 
+    "order.placed",
     bootstrap_servers=KAFKA_INSTANCE,
-    value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+    value_deserializer=lambda m: json.loads(m.decode("utf-8")),
     group_id="notification-service",
     auto_offset_reset="latest",
 )
 user_registered_consumer = AIOKafkaConsumer(
-    'user.registered', 
+    "user.registered",
     bootstrap_servers=KAFKA_INSTANCE,
-    value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+    value_deserializer=lambda m: json.loads(m.decode("utf-8")),
     group_id="notification-service",
     auto_offset_reset="latest",
 )
+
 
 async def consume_order_placed():
     """Consume messages from 'order.placed' topic."""
@@ -54,8 +55,8 @@ async def consume_order_placed():
         async for message in order_placed_consumer:
             logger.info("Received order.placed: %s", message.value)
             # Extract user_id from the message
-            user_id = message.value.get('user_id')
-            order_id = message.value.get('order_id')
+            user_id = message.value.get("user_id")
+            order_id = message.value.get("order_id")
             user_details = await get_user_details(user_id)
             logger.info("User details: %s", user_details)
             # Send notification to user
@@ -64,6 +65,7 @@ async def consume_order_placed():
     finally:
         await order_placed_consumer.stop()
         logger.info("Consumer for 'order.placed' stopped.")
+
 
 async def consume_user_registered():
     """Consume messages from 'user.registered' topic."""
@@ -79,6 +81,7 @@ async def consume_user_registered():
         await user_registered_consumer.stop()
         logger.info("Consumer for 'user.registered' stopped.")
 
+
 @app.on_event("startup")
 async def startup_event():
     """Startup event to initialize Kafka components."""
@@ -87,6 +90,7 @@ async def startup_event():
     # Start consumers concurrently
     asyncio.create_task(consume_order_placed())
     asyncio.create_task(consume_user_registered())
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -97,10 +101,12 @@ async def shutdown_event():
     await order_placed_consumer.stop()
     await user_registered_consumer.stop()
 
+
 @app.get("/")
 def root():
     """Root endpoint for testing."""
     return {"Hello": "World"}
+
 
 # Prometheus instrumentation
 Instrumentator().instrument(app).expose(app)
