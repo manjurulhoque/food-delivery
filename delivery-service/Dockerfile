@@ -10,6 +10,9 @@ COPY . .
 
 RUN npm run build
 
+# Remove source files after build
+RUN rm -rf src
+
 EXPOSE 5004
 
 CMD ["npm", "start"]

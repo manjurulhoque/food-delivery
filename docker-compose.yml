@@ -268,21 +268,17 @@ services:
   delivery-service:
     image: delivery-service:latest
     container_name: delivery-service
-    restart: unless-stopped
     build:
       context: ./delivery-service
-      dockerfile: Dockerfile
     ports:
       - "5004:5004"
-    depends_on:
-      - kafka
     environment:
-      - PORT=5004
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - KAFKA_CLIENT_ID=delivery-service
       - KAFKA_GROUP_ID=delivery-service-group
-    volumes:
-      - ./delivery-service:/app
+    depends_on:
+      - kafka
+      - postgres
     networks:
       - food-network
 
