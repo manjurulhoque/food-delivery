@@ -2,7 +2,7 @@
 
 import { MapPin, Clock3, ChevronRight } from "lucide-react";
 import { FOODS, RESTAURANTS, LOCATIONS } from "@/lib/data";
-import { Stars } from "@/components/shared";
+import { Stars } from "@/components/stars";
 
 type RestaurantCard = {
     id: number;

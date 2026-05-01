@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
 
@@ -39,3 +40,19 @@ class RegisterSerializer(serializers.ModelSerializer):
             is_driver=validated_data.get("is_driver", False),
         )
         return user
+
+
+class CustomTokenObtainSerializer(TokenObtainPairSerializer):
+
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        token["email"] = user.email
+        token["is_customer"] = user.is_customer
+        token["is_restaurant"] = user.is_restaurant
+        token["is_driver"] = user.is_driver
+        token["is_superuser"] = user.is_superuser
+        token["user_id"] = user.id
+
+        return token

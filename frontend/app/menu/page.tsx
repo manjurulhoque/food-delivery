@@ -3,7 +3,8 @@
 import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { FOODS, CATEGORIES, RESTAURANTS, LOCATIONS } from "@/lib/data";
-import { FoodCard, CategoryTabs } from "@/components/shared";
+import { FoodCard } from "@/components/food-card";
+import { CategoryTabs } from "@/components/category-tabs";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 9;

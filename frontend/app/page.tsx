@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 import { FOODS, CATEGORIES } from "@/lib/data";
-import { FoodCard, CategoryTabs, Stars } from "@/components/shared";
+import { FoodCard } from "@/components/food-card";
+import { CategoryTabs } from "@/components/category-tabs";
+import { Stars } from "@/components/stars";
 
 export default function HomePage() {
     const [popularCat, setPopularCat] = useState("Pizza");

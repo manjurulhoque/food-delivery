@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Nunito, Poppins, Geist } from "next/font/google";
 import "./globals.css";
-import { Navbar, Footer } from "@/components/shared";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
+import { AuthSessionProvider } from "@/components/session-provider";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -27,9 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en" className={cn("font-sans", geist.variable)}>
             <body className={`${nunito.variable} ${poppins.variable} font-sans bg-gray-50 text-gray-900 antialiased`}>
-                <Navbar />
-                {children}
-                <Footer />
+                <AuthSessionProvider>
+                    <Navbar />
+                    {children}
+                    <Footer />
+                </AuthSessionProvider>
             </body>
         </html>
     );

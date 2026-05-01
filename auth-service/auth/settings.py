@@ -182,4 +182,5 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "JWT_ALGORITHM": "HS256",
     "SIGNING_KEY": JWT_SECRET_KEY,
+    "TOKEN_OBTAIN_SERIALIZER": "core.serializers.CustomTokenObtainSerializer",
 }

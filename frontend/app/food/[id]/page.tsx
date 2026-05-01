@@ -5,7 +5,8 @@ import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clock, MapPin, ChefHat, Package, ThumbsUp, MessageCircle } from "lucide-react";
 import { FOODS } from "@/lib/data";
-import { FoodCard, Stars } from "@/components/shared";
+import { FoodCard } from "@/components/food-card";
+import { Stars } from "@/components/stars";
 import { cn } from "@/lib/utils";
 
 const REVIEWS = [
