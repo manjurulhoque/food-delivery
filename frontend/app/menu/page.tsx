@@ -1,30 +1,74 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { FOODS, CATEGORIES, RESTAURANTS, LOCATIONS } from "@/lib/data";
+import { ChevronDown } from "lucide-react";
+import { Food } from "@/lib/data";
 import { FoodCard } from "@/components/food-card";
 import { CategoryTabs } from "@/components/category-tabs";
+import {
+    useGetAvailableMenusQuery,
+    useGetMenuCategoriesQuery,
+} from "@/lib/services/restaurant-api";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 9;
+const MENU_EMOJIS = ["🍕", "🍝", "🍗", "🥩", "🐟"];
 
 export default function MenuPage() {
-    const [category, setCategory] = useState("Pizza");
+    const [activeCategory, setActiveCategory] = useState("All");
     const [sortBy, setSortBy] = useState("popular");
     const [maxPrice, setMaxPrice] = useState(200);
     const [selectedRests, setSelectedRests] = useState<string[]>([]);
-    const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [page, setPage] = useState(1);
+    const { data, isLoading, isError } = useGetAvailableMenusQuery();
+    const { data: categoriesData } = useGetMenuCategoriesQuery();
+
+    const foods = useMemo<Food[]>(() => {
+        const menus = data?.data ?? [];
+        return menus.map((menu) => ({
+            id: menu.id,
+            name: menu.name,
+            category: menu.category?.name ?? "Uncategorized",
+            price: Math.round(menu.price),
+            emoji: MENU_EMOJIS[menu.id % MENU_EMOJIS.length],
+            restaurant: menu.restaurant.name,
+            rating: 4.5,
+            reviews: 100 + menu.id,
+            deliveryTime: "20-35",
+            description: menu.name,
+            ingredients: [],
+            location: menu.restaurant.address,
+        }));
+    }, [data]);
+
+    const restaurants = useMemo(
+        () => Array.from(new Set((data?.data ?? []).map((menu) => menu.restaurant.name))),
+        [data]
+    );
+    const categories = useMemo(
+        () => categoriesData?.data?.map((category) => category.name) ?? [],
+        [categoriesData]
+    );
+    const tabCategories = useMemo(() => ["All", ...categories], [categories]);
+
+    const maxAvailablePrice = useMemo(
+        () => Math.max(...foods.map((food) => food.price), 200),
+        [foods]
+    );
 
     const toggleItem = (arr: string[], item: string, setArr: (v: string[]) => void) => {
         setArr(arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]);
     };
 
     const filteredFoods = useMemo(() => {
-        let result = FOODS.filter((f) => f.category === category && f.price <= maxPrice);
+        let result = foods.filter((f) => f.price <= maxPrice);
+        if (activeCategory !== "All")
+            result = result.filter((f) => f.category === activeCategory);
         if (selectedRests.length)
             result = result.filter((f) => selectedRests.some((r) => f.restaurant.includes(r)));
+        if (selectedCategories.length)
+            result = result.filter((f) => selectedCategories.includes(f.category));
         result.sort((a, b) => {
             if (sortBy === "popular") return b.reviews - a.reviews;
             if (sortBy === "newest") return b.id - a.id;
@@ -32,23 +76,31 @@ export default function MenuPage() {
             return a.price - b.price;
         });
         return result;
-    }, [category, sortBy, maxPrice, selectedRests]);
+    }, [foods, activeCategory, sortBy, maxPrice, selectedRests, selectedCategories]);
 
     const totalPages = Math.ceil(filteredFoods.length / ITEMS_PER_PAGE);
     const paginated = filteredFoods.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
     const allApplied = [
-        { label: category, onRemove: null },
+        ...selectedCategories.map((category) => ({
+            label: category,
+            onRemove: () => toggleItem(selectedCategories, category, setSelectedCategories),
+        })),
         ...selectedRests.map((r) => ({ label: r, onRemove: () => toggleItem(selectedRests, r, setSelectedRests) })),
     ];
 
     return (
         <main className="max-w-6xl mx-auto px-5 py-6">
-            {/* Category Tabs */}
             <div className="mb-5">
-                <CategoryTabs active={category} onSelect={(c) => { setCategory(c); setPage(1); }} />
+                <CategoryTabs
+                    active={activeCategory}
+                    onSelect={(category) => {
+                        setActiveCategory(category);
+                        setPage(1);
+                    }}
+                    categories={tabCategories}
+                />
             </div>
-
             <div className="flex gap-5">
                 {/* ─── Sidebar ─────────────────── */}
                 <aside className="w-52 shrink-0 flex flex-col gap-3">
@@ -99,12 +151,12 @@ export default function MenuPage() {
                     </SidebarSection>
 
                     {/* Price Range */}
-                    <SidebarSection title={`Filter by ${category}`}>
+                    <SidebarSection title="Filter by Price">
                         <div className="flex justify-between text-[10px] text-gray-400 mb-1">
                             <span>Low</span><span>High</span>
                         </div>
                         <input
-                            type="range" min={50} max={200} value={maxPrice}
+                            type="range" min={0} max={maxAvailablePrice} value={maxPrice}
                             onChange={(e) => { setMaxPrice(+e.target.value); setPage(1); }}
                             className="w-full accent-green-600"
                         />
@@ -113,24 +165,30 @@ export default function MenuPage() {
                         </div>
                     </SidebarSection>
 
-                    {/* Ingredients */}
-                    <SidebarSection title="Ingredients">
-                        {["Chicken", "Garlic", "Olive", "Sausage", "Cheese"].map((ing) => (
-                            <label key={ing} className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer mb-1.5">
+                    {/* Categories */}
+                    <SidebarSection title="Categories">
+                        {categories.map((category) => (
+                            <label
+                                key={category}
+                                className={cn(
+                                    "flex items-center gap-2 text-xs cursor-pointer mb-1.5",
+                                    selectedCategories.includes(category) ? "text-green-600 font-bold" : "text-gray-500"
+                                )}
+                            >
                                 <input
                                     type="checkbox"
-                                    checked={selectedIngredients.includes(ing)}
-                                    onChange={() => toggleItem(selectedIngredients, ing, setSelectedIngredients)}
+                                    checked={selectedCategories.includes(category)}
+                                    onChange={() => { toggleItem(selectedCategories, category, setSelectedCategories); setPage(1); }}
                                     className="accent-green-600"
                                 />
-                                {ing}
+                                <span className="truncate">{category}</span>
                             </label>
                         ))}
                     </SidebarSection>
 
                     {/* Restaurants */}
                     <SidebarSection title="Restaurants">
-                        {RESTAURANTS.map((r) => (
+                        {restaurants.map((r) => (
                             <label
                                 key={r}
                                 className={cn(
@@ -148,26 +206,30 @@ export default function MenuPage() {
                             </label>
                         ))}
                     </SidebarSection>
-
-                    {/* Locations */}
-                    <SidebarSection title="Locations">
-                        {LOCATIONS.map((l) => (
-                            <p key={l} className="text-xs text-gray-400 mb-1.5 cursor-pointer hover:text-green-600 transition-colors flex justify-between">
-                                {l} <ChevronRight size={12} className="text-gray-300" />
-                            </p>
-                        ))}
-                    </SidebarSection>
                 </aside>
 
                 {/* ─── Food Grid ─────────────────── */}
                 <div className="flex-1 min-w-0">
-                    {paginated.length > 0 ? (
+                    {isLoading && (
+                        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                            <span className="text-5xl mb-3">⏳</span>
+                            <p className="font-semibold">Loading menus...</p>
+                        </div>
+                    )}
+                    {isError && (
+                        <div className="flex flex-col items-center justify-center py-20 text-red-500">
+                            <span className="text-5xl mb-3">⚠️</span>
+                            <p className="font-semibold">Failed to load menus</p>
+                        </div>
+                    )}
+                    {paginated.length > 0 && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
                             {paginated.map((food) => (
                                 <FoodCard key={food.id} food={food} />
                             ))}
                         </div>
-                    ) : (
+                    )}
+                    {paginated.length === 0 && !isLoading && !isError && (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                             <span className="text-5xl mb-3">🍽️</span>
                             <p className="font-semibold">No dishes found</p>
@@ -176,7 +238,7 @@ export default function MenuPage() {
                     )}
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
+                    {totalPages > 1 && !isLoading && !isError && (
                         <div className="flex justify-center gap-1.5">
                             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
                                 <button

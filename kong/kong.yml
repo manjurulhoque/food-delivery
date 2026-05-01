@@ -56,3 +56,35 @@ plugins:
       - X-Custom-Header
     max_age: 3600
     credentials: true
+- name: cors
+  service: restaurant-service
+  config:
+    origins:
+      - http://localhost:3000
+    methods:
+      - GET
+      - POST
+      - OPTIONS
+    headers:
+      - Authorization
+      - Content-Type
+    exposed_headers:
+      - X-Custom-Header
+    max_age: 3600
+    credentials: true
+- name: cors
+  service: order-service
+  config:
+    origins:
+      - http://localhost:3000
+    methods:
+      - GET
+      - POST
+      - OPTIONS
+    headers:
+      - Authorization
+      - Content-Type
+    exposed_headers:
+      - X-Custom-Header
+    max_age: 3600
+    credentials: true

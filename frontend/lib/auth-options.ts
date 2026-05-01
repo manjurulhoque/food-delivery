@@ -1,6 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { fetchUserById, login } from "@/lib/auth";
+import { fetchUserById, login } from "@/lib/services/auth-api";
 
 type JwtPayload = {
     user_id?: number | string;

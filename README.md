@@ -69,3 +69,8 @@ delete topic:
 ```bash
 docker exec kafka kafka-topics.sh --delete --topic order.placed --bootstrap-server localhost:9092
 ```
+
+seed restaurant menu category:
+```bash
+docker exec -i restaurant-service python manage.py seed_menu_categories
+```

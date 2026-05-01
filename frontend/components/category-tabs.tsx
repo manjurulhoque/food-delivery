@@ -6,13 +6,15 @@ import { cn } from "@/lib/utils";
 export function CategoryTabs({
     active,
     onSelect,
+    categories = CATEGORIES,
 }: {
     active: string;
     onSelect: (cat: string) => void;
+    categories?: string[];
 }) {
     return (
         <div className="flex gap-2 overflow-x-auto pb-1 flex-wrap">
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
                 <button
                     key={c}
                     onClick={() => onSelect(c)}

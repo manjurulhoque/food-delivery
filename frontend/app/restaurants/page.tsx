@@ -3,6 +3,7 @@
 import { MapPin, Clock3, ChevronRight } from "lucide-react";
 import { FOODS, RESTAURANTS, LOCATIONS } from "@/lib/data";
 import { Stars } from "@/components/stars";
+import { useGetAvailableMenusQuery } from "@/lib/services/restaurant-api";
 
 type RestaurantCard = {
     id: number;
@@ -48,6 +49,8 @@ const dummyRestaurants: RestaurantCard[] = RESTAURANTS.map((restaurant, index) =
 
 export default function RestaurantsPage() {
     const openCount = dummyRestaurants.filter((restaurant) => restaurant.isOpen).length;
+    const { data: availableMenusResponse } = useGetAvailableMenusQuery();
+    const availableMenusCount = availableMenusResponse?.data?.length ?? 0;
 
     return (
         <main>
@@ -68,7 +71,10 @@ export default function RestaurantsPage() {
                         <StatCard label="Total Restaurants" value={String(dummyRestaurants.length)} />
                         <StatCard label="Open Now" value={String(openCount)} />
                         <StatCard label="Average Rating" value="4.5+" />
-                        <StatCard label="Cities Covered" value={String(LOCATIONS.length)} />
+                        <StatCard
+                            label="Menus Available"
+                            value={availableMenusCount > 0 ? String(availableMenusCount) : String(LOCATIONS.length)}
+                        />
                     </div>
                 </div>
             </section>

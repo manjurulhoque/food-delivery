@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
 import { Mail, Lock, ChevronRight } from "lucide-react";
-import { register } from "@/lib/auth";
+import { useRegisterMutation } from "@/lib/services/auth-api";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -14,6 +14,7 @@ export default function RegisterPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [registerUser] = useRegisterMutation();
 
     const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -27,11 +28,11 @@ export default function RegisterPage() {
         setIsSubmitting(true);
 
         try {
-            await register({
+            await registerUser({
                 email,
                 password,
                 is_customer: true,
-            });
+            }).unwrap();
 
             const result = await signIn("credentials", {
                 email,
