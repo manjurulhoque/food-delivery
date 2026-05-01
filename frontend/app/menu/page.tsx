@@ -17,14 +17,14 @@ const MENU_EMOJIS = ["🍕", "🍝", "🍗", "🥩", "🐟"];
 export default function MenuPage() {
     const [activeCategory, setActiveCategory] = useState("All");
     const [sortBy, setSortBy] = useState("popular");
-    const [maxPrice, setMaxPrice] = useState(200);
+    const [maxPrice, setMaxPrice] = useState<number | null>(null);
     const [selectedRests, setSelectedRests] = useState<string[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [page, setPage] = useState(1);
     const { data, isLoading, isError } = useGetAvailableMenusQuery();
     const { data: categoriesData } = useGetMenuCategoriesQuery();
 
-    const foods = useMemo<Food[]>(() => {
+    const menus = useMemo<Food[]>(() => {
         const menus = data?.data ?? [];
         return menus.map((menu) => ({
             id: menu.id,
@@ -53,16 +53,19 @@ export default function MenuPage() {
     const tabCategories = useMemo(() => ["All", ...categories], [categories]);
 
     const maxAvailablePrice = useMemo(
-        () => Math.max(...foods.map((food) => food.price), 200),
-        [foods]
+        () => Math.max(...menus.map((menu) => menu.price), 200),
+        [menus]
     );
 
     const toggleItem = (arr: string[], item: string, setArr: (v: string[]) => void) => {
         setArr(arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]);
     };
 
-    const filteredFoods = useMemo(() => {
-        let result = foods.filter((f) => f.price <= maxPrice);
+    const filteredMenus = useMemo(() => {
+        let result = menus;
+        if (maxPrice !== null) {
+            result = result.filter((menu) => menu.price <= maxPrice);
+        }
         if (activeCategory !== "All")
             result = result.filter((f) => f.category === activeCategory);
         if (selectedRests.length)
@@ -76,10 +79,10 @@ export default function MenuPage() {
             return a.price - b.price;
         });
         return result;
-    }, [foods, activeCategory, sortBy, maxPrice, selectedRests, selectedCategories]);
+    }, [menus, activeCategory, sortBy, maxPrice, selectedRests, selectedCategories]);
 
-    const totalPages = Math.ceil(filteredFoods.length / ITEMS_PER_PAGE);
-    const paginated = filteredFoods.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredMenus.length / ITEMS_PER_PAGE);
+    const paginatedMenus = filteredMenus.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
     const allApplied = [
         ...selectedCategories.map((category) => ({
@@ -156,12 +159,12 @@ export default function MenuPage() {
                             <span>Low</span><span>High</span>
                         </div>
                         <input
-                            type="range" min={0} max={maxAvailablePrice} value={maxPrice}
+                            type="range" min={0} max={maxAvailablePrice} value={maxPrice ?? maxAvailablePrice}
                             onChange={(e) => { setMaxPrice(+e.target.value); setPage(1); }}
                             className="w-full accent-green-600"
                         />
                         <div className="flex justify-between text-xs font-bold text-green-600 mt-1">
-                            <span>$0</span><span>${maxPrice}</span>
+                            <span>$0</span><span>${maxPrice ?? maxAvailablePrice}</span>
                         </div>
                     </SidebarSection>
 
@@ -222,17 +225,17 @@ export default function MenuPage() {
                             <p className="font-semibold">Failed to load menus</p>
                         </div>
                     )}
-                    {paginated.length > 0 && (
+                    {paginatedMenus.length > 0 && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-                            {paginated.map((food) => (
-                                <FoodCard key={food.id} food={food} />
+                            {paginatedMenus.map((menu) => (
+                                <FoodCard key={menu.id} food={menu} />
                             ))}
                         </div>
                     )}
-                    {paginated.length === 0 && !isLoading && !isError && (
+                    {paginatedMenus.length === 0 && !isLoading && !isError && (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                             <span className="text-5xl mb-3">🍽️</span>
-                            <p className="font-semibold">No dishes found</p>
+                            <p className="font-semibold">No menus found</p>
                             <p className="text-sm">Try adjusting your filters</p>
                         </div>
                     )}

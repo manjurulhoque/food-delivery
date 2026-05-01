@@ -27,6 +27,7 @@ class Menu(models.Model):
     updated = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=255)
     price = models.FloatField()
+    image = models.FileField(upload_to="menus/", null=True, blank=True)
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE)
     category = models.ForeignKey(
         MenuCategory, on_delete=models.SET_NULL, null=True, blank=True

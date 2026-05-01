@@ -19,6 +19,7 @@ type MenuForm = {
     name: string;
     price: string;
     categoryId: number | null;
+    imageFile: File | null;
 };
 
 const initialForm: MenuForm = {
@@ -26,6 +27,7 @@ const initialForm: MenuForm = {
     name: "",
     price: "",
     categoryId: null,
+    imageFile: null,
 };
 
 export default function AdminMenusPage() {
@@ -55,6 +57,7 @@ export default function AdminMenusPage() {
                 name: form.name,
                 price: Number(form.price),
                 category: form.categoryId,
+                image: form.imageFile,
                 accessToken: session?.accessToken,
             }).unwrap();
             setForm(initialForm);
@@ -75,6 +78,7 @@ export default function AdminMenusPage() {
                 name: form.name,
                 price: Number(form.price),
                 category: form.categoryId,
+                image: form.imageFile,
                 accessToken: session?.accessToken,
             }).unwrap();
             setEditing(null);
@@ -165,6 +169,17 @@ export default function AdminMenusPage() {
                         ))}
                     </select>
                     <div className="md:col-span-4 flex gap-2">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) =>
+                                setForm((prev) => ({
+                                    ...prev,
+                                    imageFile: event.target.files?.[0] ?? null,
+                                }))
+                            }
+                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-400"
+                        />
                         <button
                             type="submit"
                             disabled={isCreating || isUpdating}
@@ -203,6 +218,11 @@ export default function AdminMenusPage() {
                                     <p className="text-xs text-gray-500">
                                         {menu.restaurant.name} | {menu.category?.name ?? "Uncategorized"}
                                     </p>
+                                    {menu.image && (
+                                        <p className="text-xs text-gray-400">
+                                            Image: {menu.image}
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="flex gap-2">
                                     <button
@@ -213,6 +233,7 @@ export default function AdminMenusPage() {
                                                 name: menu.name,
                                                 price: String(menu.price),
                                                 categoryId: menu.category?.id ?? null,
+                                                imageFile: null,
                                             });
                                         }}
                                         className="text-xs font-bold text-blue-600 hover:text-blue-700"

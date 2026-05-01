@@ -1,4 +1,5 @@
 import os
+import structlog
 from datetime import timedelta
 from pathlib import Path
 from .log_handler import CustomTCPLogstashHandler
@@ -35,6 +36,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_structlog.middlewares.RequestMiddleware",
 ]
 
 ROOT_URLCONF = "auth.urls"
@@ -118,6 +120,27 @@ REST_FRAMEWORK = {
     ),
 }
 
+def setup_logging():
+    structlog.contextvars.bind_contextvars(
+        service="auth-service"
+    )
+
+setup_logging()
+
+# Structlog settings
+structlog.configure(
+    processors=[
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.dict_tracebacks,
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -128,6 +151,16 @@ LOGGING = {
             # 'format': '{"@timestamp": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}',
             "format": '{"level": "%(levelname)s", "message": "%(message)s"}',
             "style": "%",
+        },
+        "json_formatter": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+            "foreign_pre_chain": [
+                structlog.contextvars.merge_contextvars,
+                structlog.stdlib.add_log_level,
+                structlog.stdlib.add_logger_name,
+                structlog.stdlib.ExtraAdder(),
+            ],
         },
     },
     "handlers": {
@@ -146,7 +179,7 @@ LOGGING = {
             "message_type": "logstash",
             "fqdn": True,
             "tags": ["myapp"],
-            "formatter": "logstash",
+            "formatter": "json_formatter",
         },
     },
     "loggers": {
@@ -168,7 +201,7 @@ LOGGING = {
         },
         # You can log messages from other parts of your application by just using the root logger
         "": {  # This is the root logger
-            "handlers": ["myhandler"],
+            "handlers": ["myhandler", "logstash"],
             "level": "DEBUG",  # Set the logging level as needed
             "propagate": True,
         },

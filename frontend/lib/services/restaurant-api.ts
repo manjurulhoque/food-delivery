@@ -23,6 +23,7 @@ export type AvailableMenu = {
     price: number;
     created: string;
     updated: string;
+    image: string | null;
     restaurant: Restaurant;
     category: MenuCategory | null;
 };
@@ -55,6 +56,7 @@ type BasicApiResponse<T> = {
 };
 
 export const restaurantApi = api.injectEndpoints({
+    overrideExisting: true,
     endpoints: (builder) => ({
         getAvailableMenus: builder.query<
             AvailableMenusResponse,
@@ -161,15 +163,28 @@ export const restaurantApi = api.injectEndpoints({
                 name: string;
                 price: number;
                 category?: number | null;
+                image?: File | null;
                 accessToken?: string;
             }
         >({
-            query: ({ restaurantId, accessToken, ...payload }) => ({
+            query: ({ restaurantId, accessToken, name, price, category, image }) => {
+                const formData = new FormData();
+                formData.append("restaurant", String(restaurantId));
+                formData.append("name", name);
+                formData.append("price", String(price));
+                if (category !== undefined && category !== null) {
+                    formData.append("category", String(category));
+                }
+                if (image) {
+                    formData.append("image", image);
+                }
+                return {
                 url: `${RESTAURANT_BASE_URL}/${restaurantId}/menus/create/`,
                 method: "POST",
-                body: payload,
+                body: formData,
                 headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-            }),
+                };
+            },
             invalidatesTags: ["Menu"],
         }),
         updateMenu: builder.mutation<
@@ -180,15 +195,32 @@ export const restaurantApi = api.injectEndpoints({
                 name: string;
                 price: number;
                 category?: number | null;
+                image?: File | null;
                 accessToken?: string;
             }
         >({
-            query: ({ restaurantId, menuId, accessToken, ...payload }) => ({
+            query: ({ restaurantId, menuId, accessToken, name, price, category, image }) => {
+                const formData = new FormData();
+                formData.append("restaurant", String(restaurantId));
+                formData.append("name", name);
+                formData.append("price", String(price));
+                if (category !== undefined) {
+                    if (category === null) {
+                        formData.append("category", "");
+                    } else {
+                        formData.append("category", String(category));
+                    }
+                }
+                if (image) {
+                    formData.append("image", image);
+                }
+                return {
                 url: `${RESTAURANT_BASE_URL}/${restaurantId}/menus/${menuId}/`,
                 method: "PUT",
-                body: payload,
+                body: formData,
                 headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-            }),
+                };
+            },
             invalidatesTags: ["Menu"],
         }),
         deleteMenu: builder.mutation<

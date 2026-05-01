@@ -23,7 +23,7 @@ from .serializers import (
     MenuCategorySerializer,
     MenuWithRestaurantSerializer,
 )
-from .decorators import is_superuser_required
+from .decorators import is_superuser_required, has_owner_or_superuser_access
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,9 @@ class RestaurantMenusAPIView(ListAPIView):
     lookup_url_kwarg = "restaurant_id"
 
     def get_queryset(self):
-        return Menu.objects.filter(restaurant_id=self.kwargs.get("restaurant_id"))
+        return Menu.objects.filter(
+            restaurant_id=self.kwargs.get("restaurant_id")
+        ).order_by("-created")
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -149,7 +151,10 @@ class MenuDetail(RetrieveUpdateDestroyAPIView):
     lookup_url_kwarg = "menu_id"
 
     def get_queryset(self):
-        return Menu.objects.filter(id=self.kwargs.get("menu_id"))
+        return Menu.objects.filter(
+            id=self.kwargs.get("menu_id"),
+            restaurant_id=self.kwargs.get("restaurant_id"),
+        ).order_by("-created")
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -159,8 +164,26 @@ class MenuDetail(RetrieveUpdateDestroyAPIView):
         )
 
     def update(self, request, *args, **kwargs):
+        user_id, error_response = get_user_id_from_token(request)
+        if error_response:
+            return error_response
+
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
+
+        if not has_owner_or_superuser_access(
+            request,
+            owner_user_id=instance.restaurant.user_id,
+            request_user_id=user_id,
+        ):
+            return Response(
+                {
+                    "error": "You are not authorized to update this menu.",
+                    "success": False,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -176,7 +199,9 @@ class MenuDetail(RetrieveUpdateDestroyAPIView):
 
 class AvailableMenusAPIView(ListAPIView):
     model = Menu
-    queryset = Menu.objects.select_related("restaurant", "category").all()
+    queryset = Menu.objects.select_related("restaurant", "category").order_by(
+        "-created"
+    )
     serializer_class = MenuWithRestaurantSerializer
     pagination_class = AvailableMenusPagination
 

@@ -1,5 +1,5 @@
 import json
-import logging
+import structlog
 from kafka import KafkaProducer
 
 from django.contrib.auth import get_user_model
@@ -13,7 +13,7 @@ from rest_framework import status
 from .serializers import RegisterSerializer, UserSerializer
 
 User = get_user_model()
-logger = logging.getLogger("auth")
+logger = structlog.get_logger("auth")
 
 # Initialize the Kafka producer
 producer = KafkaProducer(
@@ -32,8 +32,7 @@ class RegisterView(views.APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            data = {"msg": "User registered successfully", "user": user.email}
-            logger.info(data)
+            logger.info("User registered successfully", user=user.email)
 
             try:
                 producer.send("user.registered", {"user": UserSerializer(user).data})
@@ -44,15 +43,21 @@ class RegisterView(views.APIView):
                 {"message": "User registered successfully"},
                 status=status.HTTP_201_CREATED,
             )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logger.error("User registration failed", errors=serializer.errors)
+        return Response(
+            {"errors": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class LoginView(views.APIView):
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
+        logger.info("Trying to login user", email=email)
 
         if not email or not password:
+            logger.error("Email and password are required")
             return Response(
                 {"error": "Email and password are required"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -65,8 +70,10 @@ class LoginView(views.APIView):
             return Response(
                 {"refresh": str(refresh), "access": str(refresh.access_token)}
             )
+        logger.error("Invalid credentials for user", email=email)
         return Response(
-            {"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST
+            {"error": "Invalid credentials"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
@@ -86,8 +93,10 @@ def verify_token(request):
 def get_user(request, user_id):
     user = User.objects.filter(id=user_id).first()
     if user is None or not user.is_authenticated:
+        logger.error("Unauthorized user", user_id=user_id)
         return Response(
             {"data": {"user": None}, "error": "Unauthorized"},
             status=status.HTTP_401_UNAUTHORIZED,
         )
+    logger.info("User found", user_id=user_id)
     return Response({"data": {"user": UserSerializer(user).data}})

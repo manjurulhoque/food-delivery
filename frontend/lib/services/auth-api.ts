@@ -97,6 +97,7 @@ export async function fetchUserById(userId: number): Promise<AuthUser | null> {
 }
 
 export const authApi = api.injectEndpoints({
+    overrideExisting: true,
     endpoints: (builder) => ({
         register: builder.mutation<RegisterResponse, RegisterRequest>({
             query: (payload) => ({
