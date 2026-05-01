@@ -74,3 +74,13 @@ seed restaurant menu category:
 ```bash
 docker exec -i restaurant-service python manage.py seed_menu_categories
 ```
+
+create super-user in auth-service:
+```bash
+docker exec -it auth-service sh
+```
+
+then type: 
+```bash
+python manage.py createsuperuser
+```

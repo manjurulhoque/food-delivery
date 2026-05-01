@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { jwtDecode } from "jwt-decode";
 import { fetchUserById, login } from "@/lib/services/auth-api";
 
 type JwtPayload = {
@@ -8,14 +9,8 @@ type JwtPayload = {
 };
 
 function decodeJwtPayload(token: string): JwtPayload | null {
-    const parts = token.split(".");
-    if (parts.length < 2) return null;
-
     try {
-        const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-        const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-        const payload = Buffer.from(padded, "base64").toString("utf-8");
-        return JSON.parse(payload) as JwtPayload;
+        return jwtDecode<JwtPayload>(token);
     } catch {
         return null;
     }

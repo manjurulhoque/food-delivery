@@ -4,7 +4,12 @@ from django.utils.decorators import method_decorator
 from django.conf import settings
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
+from rest_framework.generics import (
+    ListAPIView,
+    RetrieveAPIView,
+    CreateAPIView,
+    RetrieveUpdateDestroyAPIView,
+)
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework import status
@@ -65,7 +70,7 @@ class CreateRestaurantAPIView(CreateAPIView):
         )
 
 
-class RestaurantDetailAPIView(RetrieveAPIView):
+class RestaurantDetailAPIView(RetrieveUpdateDestroyAPIView):
     model = Restaurant
     queryset = Restaurant.objects.all()
     serializer_class = RestaurantSerializer
@@ -81,6 +86,21 @@ class RestaurantDetailAPIView(RetrieveAPIView):
         return Response(
             {"data": serializer.data, "success": True}, status=status.HTTP_200_OK
         )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"data": serializer.data, "success": True}, status=status.HTTP_200_OK
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response({"data": None, "success": True}, status=status.HTTP_200_OK)
 
 
 class RestaurantMenusAPIView(ListAPIView):
@@ -105,20 +125,11 @@ class RestaurantMenuCreateAPIView(CreateAPIView):
     lookup_url_kwarg = "restaurant_id"
 
     def post(self, request, *args, **kwargs):
-        user_id, error_response = get_user_id_from_token(request)
+        _user_id, error_response = get_user_id_from_token(request)
         if error_response:
             return error_response
 
         restaurant_id = self.kwargs.get("restaurant_id")
-        restaurant = Restaurant.objects.get(id=restaurant_id)
-        if restaurant.user_id != user_id:
-            return Response(
-                {
-                    "error": "You are not authorized to create menu for this restaurant.",
-                    "success": False,
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         request.data["restaurant"] = restaurant_id
         serializer = self.get_serializer(data=request.data)
@@ -130,7 +141,7 @@ class RestaurantMenuCreateAPIView(CreateAPIView):
         )
 
 
-class MenuDetail(RetrieveAPIView):
+class MenuDetail(RetrieveUpdateDestroyAPIView):
     model = Menu
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer
@@ -146,6 +157,21 @@ class MenuDetail(RetrieveAPIView):
         return Response(
             {"data": serializer.data, "success": True}, status=status.HTTP_200_OK
         )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"data": serializer.data, "success": True}, status=status.HTTP_200_OK
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response({"data": None, "success": True}, status=status.HTTP_200_OK)
 
 
 class AvailableMenusAPIView(ListAPIView):
@@ -207,7 +233,7 @@ class MenuCategoryCreateAPIView(CreateAPIView):
         )
 
 
-class MenuCategoryDetailAPIView(RetrieveAPIView):
+class MenuCategoryDetailAPIView(RetrieveUpdateDestroyAPIView):
     model = MenuCategory
     queryset = MenuCategory.objects.all()
     serializer_class = MenuCategorySerializer
@@ -223,3 +249,18 @@ class MenuCategoryDetailAPIView(RetrieveAPIView):
         return Response(
             {"data": serializer.data, "success": True}, status=status.HTTP_200_OK
         )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"data": serializer.data, "success": True}, status=status.HTTP_200_OK
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response({"data": None, "success": True}, status=status.HTTP_200_OK)
