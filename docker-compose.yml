@@ -214,6 +214,32 @@ services:
     networks:
       - food-network
 
+  order-consumer:
+    image: restaurant-service:latest
+    container_name: order-consumer
+    command: python manage.py consume_order_events
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      - SECRET_KEY=123456ABC
+      - DEBUG=True
+      - ALLOWED_HOSTS=*
+      - DATABASE_NAME=food_restaurants
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - AUTH_SERVICE_URL=http://auth-service:5000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CLIENT_ID=restaurant-service
+      - KAFKA_GROUP_ID=restaurant-service-group
+    volumes:
+      - ./restaurant-service:/app
+    networks:
+      - food-network
+    restart: unless-stopped
+
   order-service:
     image: order-service:latest
     container_name: order-service

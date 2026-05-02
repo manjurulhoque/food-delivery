@@ -1,0 +1,17 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="80" height="80" rx="10" fill="#E8F7EF"/>
+  <!-- Steam -->
+  <path d="M28 14C28 14 26 11 28 8" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.95"/>
+  <path d="M40 12C40 12 38 8 40 5" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.95"/>
+  <path d="M52 14C52 14 54 11 52 8" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.95"/>
+  <!-- Cloche dome -->
+  <path d="M21 46C21 30.5 29.5 19 40 19C50.5 19 59 30.5 59 46V48C59 50.2 57.2 52 55 52H25C22.8 52 21 50.2 21 48V46Z" fill="white" opacity="0.98"/>
+  <!-- Knob -->
+  <circle cx="40" cy="21" r="4" fill="white" opacity="0.98"/>
+  <circle cx="40" cy="21" r="2" fill="#E8F7EF"/>
+  <!-- Serving platter -->
+  <ellipse cx="40" cy="54" rx="28" ry="8" fill="white" opacity="0.95"/>
+  <ellipse cx="40" cy="53" rx="22" ry="5" fill="#C8EAD9" opacity="0.6"/>
+  <!-- Leaf accent fresh / Foody green -->
+  <path d="M52 38C52 38 58 34 58 28C58 28 50 30 48 36C46 40 48 44 48 44C48 44 52 42 52 38Z" fill="#22C55E" opacity="0.85"/>
+</svg>

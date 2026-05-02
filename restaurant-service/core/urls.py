@@ -8,6 +8,7 @@ from .views import (
     RestaurantMenuCreateAPIView,
     MenuDetail,
     AvailableMenusAPIView,
+    MenuByIdPublicAPIView,
     MenuCategoryListAPIView,
     MenuCategoryCreateAPIView,
     MenuCategoryDetailAPIView,
@@ -35,6 +36,11 @@ urlpatterns = [
         name="menu-detail",
     ),
     path("menus/all/", AvailableMenusAPIView.as_view(), name="all-menus"),
+    path(
+        "menus/detail/<int:menu_id>/",
+        MenuByIdPublicAPIView.as_view(),
+        name="menu-public-detail",
+    ),
     path("menu-categories/", MenuCategoryListAPIView.as_view(), name="menu-category-list"),
     path(
         "menu-categories/create/",

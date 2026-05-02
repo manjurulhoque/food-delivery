@@ -17,9 +17,16 @@ services:
     write_timeout: 60000    # 60 seconds
     read_timeout: 60000     # 60 seconds
     routes:
-      - name: restaurant-route
+      # Strip gateway prefix; Django serves core URLs at /menus/, /<id>/, etc.
+      - name: restaurant-api-route
         paths:
           - /api/restaurants/
+        strip_path: true
+      # Must preserve path: Django MEDIA_URL is /restaurant-service-media/...
+      - name: restaurant-media-route
+        paths:
+          - /restaurant-service-media/
+        strip_path: false
   - name: order-service
     url: http://order-service:5002
     connect_timeout: 60000  # 60 seconds

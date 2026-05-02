@@ -1,12 +1,11 @@
 "use client";
 
-import { CATEGORIES } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 export function CategoryTabs({
     active,
     onSelect,
-    categories = CATEGORIES,
+    categories = [],
 }: {
     active: string;
     onSelect: (cat: string) => void;

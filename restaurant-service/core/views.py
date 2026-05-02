@@ -231,6 +231,20 @@ class AvailableMenusAPIView(ListAPIView):
         )
 
 
+class MenuByIdPublicAPIView(RetrieveAPIView):
+    queryset = Menu.objects.select_related("restaurant", "category")
+    serializer_class = MenuWithRestaurantSerializer
+    lookup_field = "pk"
+    lookup_url_kwarg = "menu_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(
+            {"data": serializer.data, "success": True}, status=status.HTTP_200_OK
+        )
+
+
 class MenuCategoryListAPIView(ListAPIView):
     model = MenuCategory
     queryset = MenuCategory.objects.all()

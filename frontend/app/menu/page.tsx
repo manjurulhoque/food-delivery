@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
-import { Food } from "@/lib/data";
-import { FoodCard } from "@/components/food-card";
+import { Menu } from "@/lib/types/menu";
+import { MenuCard } from "@/components/menu-card";
 import { CategoryTabs } from "@/components/category-tabs";
 import {
     useGetAvailableMenusQuery,
@@ -24,7 +24,7 @@ export default function MenuPage() {
     const { data, isLoading, isError } = useGetAvailableMenusQuery();
     const { data: categoriesData } = useGetMenuCategoriesQuery();
 
-    const menus = useMemo<Food[]>(() => {
+    const menus = useMemo<Menu[]>(() => {
         const menus = data?.data ?? [];
         return menus.map((menu) => ({
             id: menu.id,
@@ -32,6 +32,7 @@ export default function MenuPage() {
             category: menu.category?.name ?? "Uncategorized",
             price: Math.round(menu.price),
             emoji: MENU_EMOJIS[menu.id % MENU_EMOJIS.length],
+            image_path: menu.image_path ?? null,
             restaurant: menu.restaurant.name,
             rating: 4.5,
             reviews: 100 + menu.id,
@@ -228,7 +229,7 @@ export default function MenuPage() {
                     {paginatedMenus.length > 0 && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
                             {paginatedMenus.map((menu) => (
-                                <FoodCard key={menu.id} food={menu} />
+                                <MenuCard key={menu.id} menu={menu} />
                             ))}
                         </div>
                     )}

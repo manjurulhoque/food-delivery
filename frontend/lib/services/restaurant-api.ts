@@ -23,7 +23,7 @@ export type AvailableMenu = {
     price: number;
     created: string;
     updated: string;
-    image: string | null;
+    image_path: string | null;
     restaurant: Restaurant;
     category: MenuCategory | null;
 };
@@ -73,6 +73,13 @@ export const restaurantApi = api.injectEndpoints({
                 };
             },
             providesTags: ["Menu", "Restaurant"],
+        }),
+        getMenuById: builder.query<BasicApiResponse<AvailableMenu>, number>({
+            query: (menuId) => ({
+                url: `${RESTAURANT_BASE_URL}/menus/detail/${menuId}/`,
+                method: "GET",
+            }),
+            providesTags: (_result, _err, menuId) => [{ type: "Menu", id: menuId }],
         }),
         getMenuCategories: builder.query<MenuCategoriesResponse, void>({
             query: () => ({
@@ -239,6 +246,7 @@ export const restaurantApi = api.injectEndpoints({
 
 export const {
     useGetAvailableMenusQuery,
+    useGetMenuByIdQuery,
     useGetMenuCategoriesQuery,
     useCreateMenuCategoryMutation,
     useUpdateMenuCategoryMutation,
