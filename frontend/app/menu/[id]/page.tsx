@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils";
 import {
     useGetMenuByIdQuery,
     useGetAvailableMenusQuery,
-    type AvailableMenu,
 } from "@/lib/services/restaurant-api";
 import { FoodyMenuPlaceholder } from "@/components/foody-menu-placeholder";
 import { resolveMenuImageUrl } from "@/lib/menu-image";
+import { addMenuToBag } from "@/lib/bag";
 
 const REVIEWS = [
     {
@@ -59,23 +59,6 @@ const REVIEWS = [
 
 const MENU_EMOJIS = ["🍕", "🍝", "🍗", "🥩", "🐟"];
 
-function toMenuCardModel(menu: AvailableMenu): Menu {
-    return {
-        id: menu.id,
-        name: menu.name,
-        category: menu.category?.name ?? "Uncategorized",
-        price: Math.round(menu.price),
-        emoji: MENU_EMOJIS[menu.id % MENU_EMOJIS.length],
-        image_path: menu.image_path ?? null,
-        restaurant: menu.restaurant.name,
-        rating: 4.5,
-        reviews: 100 + menu.id,
-        deliveryTime: "20-35",
-        description: menu.name,
-        ingredients: [],
-        location: menu.restaurant.address,
-    };
-}
 
 export default function FoodDetailPage() {
     const params = useParams();
@@ -109,8 +92,8 @@ export default function FoodDetailPage() {
         const picked =
             sameCategory.length > 0
                 ? sameCategory
-                : others.filter((m) => m.restaurant.id === menu.restaurant.id);
-        return picked.slice(0, 4).map(toMenuCardModel);
+                : others.filter((m) => m.restaurant?.id === menu.restaurant?.id);
+        return picked.slice(0, 4);
     }, [menu, menusListResponse]);
 
     const imageUrl = menu ? resolveMenuImageUrl(menu.image_path) : null;
@@ -118,7 +101,7 @@ export default function FoodDetailPage() {
     const descriptionText = menu
         ? `Fresh ${menu.name}${
               menu.category?.name ? ` — ${menu.category.name}` : ""
-          }. Served from ${menu.restaurant.name}. Order through Foody for reliable delivery.`
+          }. Served from ${menu.restaurant?.name ?? ""}. Order through Foody for reliable delivery.`
         : "";
 
     if (!isValidId) {
@@ -203,12 +186,12 @@ export default function FoodDetailPage() {
                         <div className="flex items-center gap-2">
                             <ChefHat size={15} className="text-green-600 shrink-0" />
                             <span className="text-sm font-semibold text-gray-800">
-                                {menu.restaurant.name}
+                                {menu.restaurant?.name ?? ""}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <MapPin size={15} className="text-green-600 shrink-0" />
-                            <span className="text-sm text-gray-500">{menu.restaurant.address}</span>
+                            <span className="text-sm text-gray-500">{menu.restaurant?.address ?? ""}</span>
                         </div>
                     </div>
 
@@ -217,19 +200,19 @@ export default function FoodDetailPage() {
                             <Store size={14} />
                             Restaurant
                         </p>
-                        <p className="font-semibold text-gray-900">{menu.restaurant.name}</p>
+                        <p className="font-semibold text-gray-900">{menu.restaurant?.name ?? ""}</p>
                         <div className="mt-2 space-y-1.5 text-sm text-gray-600">
                             <div className="flex items-start gap-2">
                                 <MapPin size={14} className="text-green-600 shrink-0 mt-0.5" />
-                                <span>{menu.restaurant.address}</span>
+                                <span>{menu.restaurant?.address ?? ""}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Phone size={14} className="text-green-600 shrink-0" />
                                 <a
-                                    href={`tel:${menu.restaurant.phone}`}
+                                    href={`tel:${menu.restaurant?.phone ?? ""}`}
                                     className="text-green-700 font-medium hover:underline"
                                 >
-                                    {menu.restaurant.phone}
+                                    {menu.restaurant?.phone ?? ""}
                                 </a>
                             </div>
                         </div>
@@ -279,6 +262,8 @@ export default function FoodDetailPage() {
                         <button
                             type="button"
                             className="flex-1 min-w-[140px] bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2.5 rounded-xl transition-colors"
+                            onClick={() => addMenuToBag(menu, qty)}
+                            disabled={qty <= 0}
                         >
                             Add to Bag
                         </button>

@@ -1,35 +1,13 @@
 import { api, RESTAURANT_BASE_URL } from "@/lib/services/api";
+import { Menu } from "@/lib/types/menu";
+import { MenuCategory } from "@/lib/types/menu-category";
+import { Restaurant } from "@/lib/types/restaurant";
 
-export type MenuCategory = {
-    id: number;
-    name: string;
-    created: string;
-    updated: string;
-};
-
-export type Restaurant = {
-    id: number;
-    name: string;
-    address: string;
-    phone: string;
-    user_id: number;
-    created: string;
-    updated: string;
-};
-
-export type AvailableMenu = {
-    id: number;
-    name: string;
-    price: number;
-    created: string;
-    updated: string;
-    image_path: string | null;
-    restaurant: Restaurant;
-    category: MenuCategory | null;
-};
+export type { MenuCategory } from "@/lib/types/menu-category";
+export type { Restaurant } from "@/lib/types/restaurant";
 
 type AvailableMenusResponse = {
-    data: AvailableMenu[];
+    data: Menu[];
     success: boolean;
     pagination?: {
         count: number;
@@ -74,7 +52,7 @@ export const restaurantApi = api.injectEndpoints({
             },
             providesTags: ["Menu", "Restaurant"],
         }),
-        getMenuById: builder.query<BasicApiResponse<AvailableMenu>, number>({
+        getMenuById: builder.query<BasicApiResponse<Menu>, number>({
             query: (menuId) => ({
                 url: `${RESTAURANT_BASE_URL}/menus/detail/${menuId}/`,
                 method: "GET",
@@ -164,7 +142,7 @@ export const restaurantApi = api.injectEndpoints({
             invalidatesTags: ["Restaurant", "Menu"],
         }),
         createMenu: builder.mutation<
-            BasicApiResponse<AvailableMenu>,
+            BasicApiResponse<Menu>,
             {
                 restaurantId: number;
                 name: string;
@@ -195,7 +173,7 @@ export const restaurantApi = api.injectEndpoints({
             invalidatesTags: ["Menu"],
         }),
         updateMenu: builder.mutation<
-            BasicApiResponse<AvailableMenu>,
+            BasicApiResponse<Menu>,
             {
                 restaurantId: number;
                 menuId: number;

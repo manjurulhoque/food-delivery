@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, Search, ChevronDown, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FOODY_BAG_UPDATED_EVENT, getBagCount } from "@/lib/bag";
 
 export function Navbar() {
     const pathname = usePathname();
     const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+    const [bagCount, setBagCount] = useState(0);
     const { data: session, status } = useSession();
     const isAuthenticated = status === "authenticated";
     const role = session?.user?.is_superuser
@@ -48,6 +50,17 @@ export function Navbar() {
         { label: "Offers", href: "/offers" },
     ];
 
+    useEffect(() => {
+        const updateBagCount = () => setBagCount(getBagCount());
+        updateBagCount();
+        window.addEventListener(FOODY_BAG_UPDATED_EVENT, updateBagCount);
+        window.addEventListener("storage", updateBagCount);
+        return () => {
+            window.removeEventListener(FOODY_BAG_UPDATED_EVENT, updateBagCount);
+            window.removeEventListener("storage", updateBagCount);
+        };
+    }, []);
+
     return (
         <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
             <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
@@ -82,12 +95,20 @@ export function Navbar() {
                     <button className="text-gray-500 hover:text-gray-800 transition-colors">
                         <Search size={18} />
                     </button>
-                    <button className="relative text-gray-500 hover:text-gray-800 transition-colors mr-10">
+                    <Link
+                        href="/cart"
+                        className={cn(
+                            "relative transition-colors mr-10",
+                            pathname === "/cart"
+                                ? "text-green-600"
+                                : "text-gray-500 hover:text-gray-800"
+                        )}
+                    >
                         <ShoppingCart size={18} />
-                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-orange-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                            3
+                        <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 bg-orange-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                            {bagCount}
                         </span>
-                    </button>
+                    </Link>
                     {isAuthenticated ? (
                         <>
                             <div className="hidden lg:flex flex-col items-end leading-tight">

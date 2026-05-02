@@ -24,27 +24,10 @@ export default function MenuPage() {
     const { data, isLoading, isError } = useGetAvailableMenusQuery();
     const { data: categoriesData } = useGetMenuCategoriesQuery();
 
-    const menus = useMemo<Menu[]>(() => {
-        const menus = data?.data ?? [];
-        return menus.map((menu) => ({
-            id: menu.id,
-            name: menu.name,
-            category: menu.category?.name ?? "Uncategorized",
-            price: Math.round(menu.price),
-            emoji: MENU_EMOJIS[menu.id % MENU_EMOJIS.length],
-            image_path: menu.image_path ?? null,
-            restaurant: menu.restaurant.name,
-            rating: 4.5,
-            reviews: 100 + menu.id,
-            deliveryTime: "20-35",
-            description: menu.name,
-            ingredients: [],
-            location: menu.restaurant.address,
-        }));
-    }, [data]);
+    const menus = data?.data ?? [];
 
     const restaurants = useMemo(
-        () => Array.from(new Set((data?.data ?? []).map((menu) => menu.restaurant.name))),
+        () => Array.from(new Set((data?.data ?? []).map((menu) => menu.restaurant?.name ?? ""))),
         [data]
     );
     const categories = useMemo(
@@ -67,18 +50,18 @@ export default function MenuPage() {
         if (maxPrice !== null) {
             result = result.filter((menu) => menu.price <= maxPrice);
         }
-        if (activeCategory !== "All")
-            result = result.filter((f) => f.category === activeCategory);
-        if (selectedRests.length)
-            result = result.filter((f) => selectedRests.some((r) => f.restaurant.includes(r)));
-        if (selectedCategories.length)
-            result = result.filter((f) => selectedCategories.includes(f.category));
-        result.sort((a, b) => {
-            if (sortBy === "popular") return b.reviews - a.reviews;
-            if (sortBy === "newest") return b.id - a.id;
-            if (sortBy === "fastest") return a.deliveryTime.localeCompare(b.deliveryTime);
-            return a.price - b.price;
-        });
+        // if (activeCategory !== "All")
+        //     result = result.filter((f) => f.category?.id === activeCategory);
+        // if (selectedRests.length)
+        //     result = result.filter((f) => selectedRests.some((r) => f.restaurant.includes(r)));
+        // if (selectedCategories.length)
+        //     result = result.filter((f) => selectedCategories.includes(f.category));
+        // result.sort((a, b) => {
+        //     if (sortBy === "popular") return b.reviews - a.reviews;
+        //     if (sortBy === "newest") return b.id - a.id;
+        //     if (sortBy === "fastest") return a.deliveryTime.localeCompare(b.deliveryTime);
+        //     return a.price - b.price;
+        // });
         return result;
     }, [menus, activeCategory, sortBy, maxPrice, selectedRests, selectedCategories]);
 

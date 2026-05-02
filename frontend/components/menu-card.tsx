@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Stars } from "@/components/stars";
 import { FoodyMenuPlaceholder } from "@/components/foody-menu-placeholder";
 import { resolveMenuImageUrl } from "@/lib/menu-image";
+import { addMenuToBag } from "@/lib/bag";
 
 const emojiColors: Record<string, string> = {
     "🍕": "bg-red-50",
@@ -21,13 +22,12 @@ export function MenuCard({ menu }: { menu: Menu }) {
 
     return (
         <Link
-            href={`/food/${menu.id}`}
+            href={`/menu/${menu.id}`}
             className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-200 flex flex-col"
         >
             <div
                 className={cn(
                     "relative flex items-center justify-center h-36 overflow-hidden",
-                    !showPhoto && !showPlaceholder && (emojiColors[menu.emoji] || "bg-gray-50"),
                     (showPhoto || showPlaceholder) && "bg-[#E8F7EF]"
                 )}
             >
@@ -41,18 +41,22 @@ export function MenuCard({ menu }: { menu: Menu }) {
                 ) : showPlaceholder ? (
                     <FoodyMenuPlaceholder size={96} label={menu.name} className="relative z-0" />
                 ) : (
-                    <span className="text-5xl">{menu.emoji}</span>
+                    <></>
                 )}
                 <button
                     className="absolute bottom-2 right-2 w-7 h-7 bg-orange-500 hover:bg-orange-600 text-white rounded-full flex items-center justify-center text-lg font-bold transition-colors"
-                    onClick={(e) => { e.preventDefault(); }}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addMenuToBag(menu, 1);
+                    }}
                 >
                     +
                 </button>
             </div>
             <div className="p-3 flex flex-col flex-1">
                 <p className="font-bold text-sm text-gray-900 mb-0.5 truncate">{menu.name}</p>
-                <p className="text-xs text-gray-400 mb-2 truncate">{menu.restaurant}</p>
+                <p className="text-xs text-gray-400 mb-2 truncate">{menu.restaurant?.name ?? ""}</p>
                 <div className="flex items-center gap-1 mb-2">
                     <Stars rating={menu.rating} size={11} />
                     <span className="text-xs text-gray-400">({menu.reviews})</span>

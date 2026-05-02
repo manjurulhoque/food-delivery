@@ -13,29 +13,10 @@ import {
     useGetAvailableMenusQuery,
     useGetMenuCategoriesQuery,
     useGetRestaurantsQuery,
-    type AvailableMenu,
 } from "@/lib/services/restaurant-api";
 import { FOODY_MENU_PLACEHOLDER_SRC } from "@/components/foody-menu-placeholder";
 
 const MENU_EMOJIS = ["🍕", "🍝", "🍗", "🥩", "🐟"];
-
-function toMenuCardModel(menu: AvailableMenu): Menu {
-    return {
-        id: menu.id,
-        name: menu.name,
-        category: menu.category?.name ?? "Uncategorized",
-        price: Math.round(menu.price),
-        emoji: MENU_EMOJIS[menu.id % MENU_EMOJIS.length],
-        image_path: menu.image_path,
-        restaurant: menu.restaurant.name,
-        rating: 4.5,
-        reviews: 100 + menu.id,
-        deliveryTime: "20-35",
-        description: menu.name,
-        ingredients: [],
-        location: menu.restaurant.address,
-    };
-}
 
 function FeaturedSpotlight({ menu }: { menu: Menu }) {
     const showPhoto = Boolean(menu.image_path);
@@ -60,7 +41,7 @@ function FeaturedSpotlight({ menu }: { menu: Menu }) {
                     unoptimized
                 />
             ) : (
-                <span className="text-7xl">{menu.emoji}</span>
+                <></>
             )}
         </div>
     );
@@ -83,31 +64,31 @@ export default function HomePage() {
 
     const menus = useMemo(() => {
         const menus = menusResponse?.data ?? [];
-        return menus.map(toMenuCardModel);
+        return menus;
     }, [menusResponse]);
 
     const popularMenus = useMemo(() => {
         let list = menus;
-        if (popularCat !== "All") list = list.filter((f) => f.category === popularCat);
-        return [...list].sort((a, b) => b.reviews - a.reviews).slice(0, 4);
+        // if (popularCat !== "All") list = list.filter((f) => f.category?.id === popularCat);
+        return [...list].sort((a, b) => b.reviews - a.reviews).slice(0, 4) ?? [];
     }, [menus, popularCat]);
 
     const newestMenus = useMemo(() => {
         const menus = menusResponse?.data ?? [];
         let list = [...menus].sort(
-            (a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()
+            (a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()
         );
-        if (newestCat !== "All") {
-            list = list.filter((m) => (m.category?.name ?? "Uncategorized") === newestCat);
-        }
-        return list.slice(0, 4).map(toMenuCardModel);
+        // if (newestCat !== "All") {
+        //     list = list.filter((m) => (m.category?.id ?? 0) === newestCat);
+        // }
+        return list.slice(0, 4);
     }, [menusResponse, newestCat]);
 
     const featuredMenu = useMemo(() => {
         const menus = menusResponse?.data ?? [];
         if (menus.length === 0) return null;
         const top = [...menus].sort((a, b) => b.price - a.price)[0];
-        return top ? toMenuCardModel(top) : null;
+        return top ?? null;
     }, [menusResponse]);
 
     const restaurantCount = restaurantsResponse?.data?.length ?? 0;
@@ -198,7 +179,7 @@ export default function HomePage() {
                                     20% off for today&apos;s ordering!
                                 </span>
                                 <h3 className="font-[Poppins] font-bold text-2xl mb-1 truncate">{featuredMenu.name}</h3>
-                                <p className="text-sm text-gray-400 mb-3 truncate">{featuredMenu.restaurant}</p>
+                                <p className="text-sm text-gray-400 mb-3 truncate">{featuredMenu.restaurant?.name ?? ""}</p>
                                 <div className="flex items-center gap-3 mb-4 flex-wrap">
                                     <span className="text-xl font-extrabold text-orange-500">
                                         ${(featuredMenu.price * 0.8).toFixed(0)}.00
@@ -209,7 +190,7 @@ export default function HomePage() {
                                 </div>
                                 <div className="flex gap-3 flex-wrap">
                                     <Link
-                                        href={`/food/${featuredMenu.id}`}
+                                        href={`/menu/${featuredMenu.id}`}
                                         className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors inline-flex items-center justify-center"
                                     >
                                         View dish
