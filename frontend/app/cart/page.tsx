@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ShoppingBag, Trash2 } from "lucide-react";
 import {
@@ -17,6 +18,7 @@ const DELIVERY_FEE = 4.99;
 const TAX_RATE = 0.08;
 
 export default function CartPage() {
+    const router = useRouter();
     const [items, setItems] = useState<BagItem[]>([]);
 
     useEffect(() => {
@@ -104,7 +106,7 @@ export default function CartPage() {
                                                     {item.menu.name}
                                                 </h3>
                                                 <p className="text-xs text-gray-400 truncate">
-                                                    {item.menu.restaurant?.name ?? ""}
+                                                    {item.menu.restaurant?.name ?? "Restaurant"}
                                                 </p>
                                                 <p className="text-sm font-extrabold text-green-600 mt-1">
                                                     ${Number(item.menu.price).toFixed(2)}
@@ -179,7 +181,8 @@ export default function CartPage() {
                             </div>
                             <button
                                 type="button"
-                                className="mt-5 w-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2.5 rounded-xl transition-colors"
+                                onClick={() => router.push("/checkout")}
+                                className="mt-5 w-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2.5 rounded-xl transition-colors cursor-pointer"
                             >
                                 Checkout
                             </button>

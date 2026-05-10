@@ -71,3 +71,7 @@ export function getBagSubtotal(): number {
         0
     );
 }
+
+export function clearBag(): void {
+    setBagItems([]);
+}
