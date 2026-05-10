@@ -28,9 +28,34 @@ export type UpdateOrderResponse = {
     message: string;
 };
 
+export type CustomerOrderItem = {
+    menu_id: number;
+    quantity: number;
+};
+
+export type CustomerOrder = {
+    id: number;
+    restaurant_id: number;
+    total_price: number;
+    status: string;
+    created_at: string;
+    items: CustomerOrderItem[];
+};
+
+export type CustomerOrdersResponse = {
+    orders: CustomerOrder[];
+};
+
 export const orderApi = api.injectEndpoints({
     overrideExisting: true,
     endpoints: (builder) => ({
+        getMyOrders: builder.query<CustomerOrdersResponse, void>({
+            query: () => ({
+                url: `${ORDER_BASE_URL}/my-orders/`,
+                method: "GET",
+            }),
+            providesTags: ["Order"],
+        }),
         createOrder: builder.mutation<CreateOrderResponse, CreateOrderPayload>({
             query: ({ accessToken, ...payload }) => ({
                 url: `${ORDER_BASE_URL}/create-order/`,
@@ -56,4 +81,8 @@ export const orderApi = api.injectEndpoints({
     }),
 });
 
-export const { useCreateOrderMutation, useUpdateOrderMutation } = orderApi;
+export const {
+    useGetMyOrdersQuery,
+    useCreateOrderMutation,
+    useUpdateOrderMutation,
+} = orderApi;

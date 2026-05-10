@@ -54,6 +54,38 @@ class CreateOrderView(APIView):
         return Response({"order_id": order.id, "success": True}, status=status.HTTP_201_CREATED)
 
 
+class CustomerOrdersListView(APIView):
+    """Return orders for the authenticated customer (JWT user_id)."""
+
+    def get(self, request):
+        user_id, error_response = get_user_id_from_token(request)
+        if error_response:
+            return error_response
+
+        orders = (
+            Order.objects.filter(user_id=user_id)
+            .prefetch_related("items")
+            .order_by("-created_at")
+        )
+        payload = []
+        for order in orders:
+            payload.append(
+                {
+                    "id": order.id,
+                    "restaurant_id": order.restaurant_id,
+                    "total_price": order.total_price,
+                    "status": order.status,
+                    "created_at": order.created_at.isoformat(),
+                    "items": [
+                        {"menu_id": item.menu_id, "quantity": item.quantity}
+                        for item in order.items.all()
+                    ],
+                }
+            )
+
+        return Response({"orders": payload}, status=status.HTTP_200_OK)
+
+
 class UpdateOrderAPIView(APIView):
     def post(self, request):
         user_id, error_response = get_user_id_from_token(request)
