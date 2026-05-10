@@ -6,11 +6,11 @@ import requests
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("order-service")
 
 
 def get_user_details(user_id: int) -> dict:
-    response = requests.get(f"{AUTH_SERVICE_URL}/users/{user_id}/")
+    response = requests.get(f"{settings.AUTH_SERVICE_URL}/users/{user_id}/")
     if response.status_code == status.HTTP_200_OK:
         return response.json()
     raise Exception(f"Failed to fetch user details: {response.status_code}")

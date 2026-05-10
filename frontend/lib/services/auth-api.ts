@@ -28,10 +28,11 @@ function buildErrorMessage(payload: ApiErrorPayload, fallback: string) {
     return fallback;
 }
 
-async function parseJsonSafe(response: Response) {
+async function parseJsonSafe(response: any) {
     try {
         return (await response.json()) as ApiErrorPayload;
-    } catch {
+    } catch (error) {
+        console.log("Error parsing JSON:", error);
         return {};
     }
 }
@@ -55,8 +56,34 @@ type VerifyTokenResponse = {
 };
 
 type GetUserResponse = {
-    user?: AuthUser;
+    data?: {
+        user?: AuthUser;
+    };
 };
+
+export async function refreshAccessToken(refreshToken: string): Promise<LoginResponse> {
+    const response = await fetch(`${AUTH_BASE_URL}/token/refresh/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refresh: refreshToken }),
+    });
+
+    const data = (await parseJsonSafe(response)) as Partial<LoginResponse> & ApiErrorPayload;
+    if (!response.ok) {
+        throw new Error(buildErrorMessage(data, "Could not refresh session"));
+    }
+
+    if (!data.access) {
+        throw new Error("Auth service did not return a new access token");
+    }
+
+    return {
+        access: data.access,
+        refresh: typeof data.refresh === "string" ? data.refresh : refreshToken,
+    };
+}
 
 export async function login(payload: { email: string; password: string }): Promise<LoginResponse> {
     const response = await fetch(`${AUTH_BASE_URL}/login/`, {
@@ -68,10 +95,10 @@ export async function login(payload: { email: string; password: string }): Promi
     });
 
     const data = (await parseJsonSafe(response)) as LoginResponse & ApiErrorPayload;
+    
     if (!response.ok) {
         throw new Error(buildErrorMessage(data, "Login failed"));
     }
-
     if (!data.access || !data.refresh) {
         throw new Error("Auth service did not return tokens");
     }
@@ -87,13 +114,12 @@ export async function fetchUserById(userId: number): Promise<AuthUser | null> {
         method: "GET",
     });
 
-    const data = await parseJsonSafe(response);
+    const data = (await parseJsonSafe(response)) as GetUserResponse;
     if (!response.ok) {
         return null;
     }
 
-    const user = (data as { user?: AuthUser }).user;
-    return user ?? null;
+    return data.data?.user ?? null;
 }
 
 export const authApi = api.injectEndpoints({

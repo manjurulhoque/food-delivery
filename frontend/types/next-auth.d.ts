@@ -12,6 +12,7 @@ declare module "next-auth" {
         } & DefaultSession["user"];
         accessToken?: string;
         refreshToken?: string;
+        error?: string;
     }
 
     interface User {
@@ -36,5 +37,6 @@ declare module "next-auth/jwt" {
         is_restaurant?: boolean;
         is_driver?: boolean;
         is_superuser?: boolean;
+        error?: string;
     }
 }

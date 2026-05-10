@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, ChevronRight, ShoppingBag } from "lucide-react";
 import {
     FOODY_BAG_UPDATED_EVENT,
@@ -9,12 +9,16 @@ import {
     getBagItems,
     type BagItem,
 } from "@/lib/bag";
+import { useCreateOrderMutation } from "@/lib/services/order-api";
+import { toast } from "@/hooks/use-toast";
 
 const DELIVERY_FEE = 4.99;
 const TAX_RATE = 0.08;
 
 export default function CheckoutPage() {
+    const [createOrder, { isLoading: isPlacingOrder }] = useCreateOrderMutation();
     const [items, setItems] = useState<BagItem[]>([]);
+    const [isBagLoading, setIsBagLoading] = useState(true);
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [address, setAddress] = useState("");
@@ -22,7 +26,10 @@ export default function CheckoutPage() {
     const [isPlaced, setIsPlaced] = useState(false);
 
     useEffect(() => {
-        const syncBag = () => setItems(getBagItems());
+        const syncBag = () => {
+            setItems(getBagItems());
+            setIsBagLoading(false);
+        };
         syncBag();
         window.addEventListener(FOODY_BAG_UPDATED_EVENT, syncBag);
         window.addEventListener("storage", syncBag);
@@ -39,12 +46,53 @@ export default function CheckoutPage() {
     const tax = subtotal * TAX_RATE;
     const total = subtotal > 0 ? subtotal + tax + DELIVERY_FEE : 0;
 
-    const onPlaceOrder = (event: FormEvent<HTMLFormElement>) => {
+    const onPlaceOrder: React.FormEventHandler<HTMLFormElement> = async (event) => {
         event.preventDefault();
-        if (items.length === 0) return;
-        clearBag();
-        setItems([]);
-        setIsPlaced(true);
+        if (items.length === 0) {
+            toast({
+                title: "Your bag is empty",
+                description: "Add menu items before placing an order.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        const restaurantId = items[0]?.menu.restaurant?.id;
+        if (!restaurantId) {
+            toast({
+                title: "Missing restaurant data",
+                description: "Please remove and add the item again before checkout.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        try {
+            await createOrder({
+                restaurant_id: restaurantId,
+                total_price: Number(total.toFixed(2)),
+                items: items.map((item) => ({
+                    menu_id: item.menu.id,
+                    quantity: item.quantity,
+                })),
+            }).unwrap();
+
+            clearBag();
+            setItems([]);
+            setIsPlaced(true);
+            toast({
+                title: "Order placed",
+                description: "Your order has been submitted successfully.",
+            });
+        } catch (error) {
+            let errorMessage = "Could not place order. Please try again.";
+
+            toast({
+                title: "Order failed",
+                description: errorMessage,
+                variant: "destructive",
+            });
+        }
     };
 
     return (
@@ -63,7 +111,17 @@ export default function CheckoutPage() {
             </section>
 
             <section className="max-w-6xl mx-auto px-5 py-8">
-                {isPlaced ? (
+                {isBagLoading ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-10">
+                        <div className="animate-pulse space-y-4">
+                            <div className="h-6 w-44 bg-gray-100 rounded" />
+                            <div className="h-12 w-full bg-gray-100 rounded-lg" />
+                            <div className="h-12 w-full bg-gray-100 rounded-lg" />
+                            <div className="h-24 w-full bg-gray-100 rounded-lg" />
+                            <div className="h-10 w-40 bg-gray-100 rounded-lg" />
+                        </div>
+                    </div>
+                ) : isPlaced ? (
                     <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
                         <div className="w-14 h-14 rounded-2xl bg-green-100 text-green-700 mx-auto mb-4 flex items-center justify-center">
                             <CheckCircle2 size={26} />
@@ -187,9 +245,10 @@ export default function CheckoutPage() {
 
                             <button
                                 type="submit"
-                                className="mt-6 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-colors cursor-pointer"
+                                disabled={isPlacingOrder}
+                                className="mt-6 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-bold py-2.5 px-6 rounded-xl transition-colors cursor-pointer"
                             >
-                                Place Order
+                                {isPlacingOrder ? "Placing..." : "Place Order"}
                             </button>
                         </form>
 

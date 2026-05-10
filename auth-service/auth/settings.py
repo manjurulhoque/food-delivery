@@ -212,7 +212,7 @@ JWT_SECRET_KEY = "z8B82VSkyLR7IUhDfe4ekI5aaU2DD5gWl08cP0P-pnpZHppnme6L54-ZpgXxna
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=3),
     "JWT_ALGORITHM": "HS256",
     "SIGNING_KEY": JWT_SECRET_KEY,
     "TOKEN_OBTAIN_SERIALIZER": "core.serializers.CustomTokenObtainSerializer",

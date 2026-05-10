@@ -1,11 +1,12 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { jwtDecode } from "jwt-decode";
-import { fetchUserById, login } from "@/lib/services/auth-api";
+import { fetchUserById, login, refreshAccessToken } from "@/lib/services/auth-api";
 
 type JwtPayload = {
     user_id?: number | string;
     sub?: string;
+    exp?: number;
 };
 
 function decodeJwtPayload(token: string): JwtPayload | null {
@@ -73,6 +74,37 @@ export const authOptions: NextAuthOptions = {
                 token.is_superuser = user.is_superuser;
             }
 
+            const refreshToken =
+                typeof token.refreshToken === "string" ? token.refreshToken : "";
+            if (!refreshToken) {
+                return token;
+            }
+
+            const accessToken =
+                typeof token.accessToken === "string" ? token.accessToken : "";
+            const payload = accessToken ? decodeJwtPayload(accessToken) : null;
+            const expSec = typeof payload?.exp === "number" ? payload.exp : 0;
+            const nowSec = Math.floor(Date.now() / 1000);
+            const refreshBufferSec = 120;
+
+            if (accessToken && expSec > nowSec + refreshBufferSec) {
+                if (token.error === "RefreshAccessTokenError") {
+                    delete token.error;
+                }
+                return token;
+            }
+
+            try {
+                const refreshed = await refreshAccessToken(refreshToken);
+                token.accessToken = refreshed.access;
+                token.refreshToken = refreshed.refresh;
+                delete token.error;
+            } catch {
+                delete token.accessToken;
+                delete token.refreshToken;
+                token.error = "RefreshAccessTokenError";
+            }
+
             return token;
         },
         async session({ session, token }) {
@@ -84,6 +116,7 @@ export const authOptions: NextAuthOptions = {
             session.user.is_superuser = Boolean(token.is_superuser);
             session.accessToken = typeof token.accessToken === "string" ? token.accessToken : undefined;
             session.refreshToken = typeof token.refreshToken === "string" ? token.refreshToken : undefined;
+            session.error = typeof token.error === "string" ? token.error : undefined;
 
             return session;
         },
