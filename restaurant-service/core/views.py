@@ -105,7 +105,7 @@ class RestaurantDetailAPIView(RetrieveUpdateDestroyAPIView):
 
 class RestaurantMenusAPIView(ListAPIView):
     model = Menu
-    serializer_class = MenuSerializer
+    serializer_class = MenuWithRestaurantSerializer
     lookup_url_kwarg = "restaurant_id"
 
     def get_queryset(self):

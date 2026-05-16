@@ -99,6 +99,24 @@ export const restaurantApi = api.injectEndpoints({
             }),
             providesTags: ["Restaurant"],
         }),
+        getRestaurantById: builder.query<BasicApiResponse<Restaurant>, number>({
+            query: (restaurantId) => ({
+                url: `${RESTAURANT_BASE_URL}/${restaurantId}/`,
+                method: "GET",
+            }),
+            providesTags: (_result, _err, restaurantId) => [
+                { type: "Restaurant", id: restaurantId },
+            ],
+        }),
+        getRestaurantMenus: builder.query<AvailableMenusResponse, number>({
+            query: (restaurantId) => ({
+                url: `${RESTAURANT_BASE_URL}/${restaurantId}/menus/`,
+                method: "GET",
+            }),
+            providesTags: (_result, _err, restaurantId) => [
+                { type: "Menu", id: `restaurant-${restaurantId}` },
+            ],
+        }),
         createRestaurant: builder.mutation<
             BasicApiResponse<Restaurant>,
             { name: string; address: string; phone: string; accessToken?: string }
@@ -230,6 +248,8 @@ export const {
     useUpdateMenuCategoryMutation,
     useDeleteMenuCategoryMutation,
     useGetRestaurantsQuery,
+    useGetRestaurantByIdQuery,
+    useGetRestaurantMenusQuery,
     useCreateRestaurantMutation,
     useUpdateRestaurantMutation,
     useDeleteRestaurantMutation,

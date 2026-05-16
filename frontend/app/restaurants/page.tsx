@@ -7,9 +7,9 @@ import { Stars } from "@/components/stars";
 import {
     useGetAvailableMenusQuery,
     useGetRestaurantsQuery,
-    type AvailableMenu,
-    type Restaurant,
 } from "@/lib/services/restaurant-api";
+import type { Menu } from "@/lib/types/menu";
+import type { Restaurant } from "@/lib/types/restaurant";
 import { cn } from "@/lib/utils";
 
 type RestaurantCard = {
@@ -47,9 +47,9 @@ function modeCategoryName(names: (string | undefined)[]): string {
     return entries.sort((a, b) => b[1] - a[1])[0][0];
 }
 
-function buildRestaurantCards(restaurants: Restaurant[], menus: AvailableMenu[]): RestaurantCard[] {
+function buildRestaurantCards(restaurants: Restaurant[], menus: Menu[]): RestaurantCard[] {
     return restaurants.map((r) => {
-        const rMenus = menus.filter((m) => m.restaurant.id === r.id);
+        const rMenus = menus.filter((m) => m.restaurant?.id === r.id);
         const categories = rMenus.map((m) => m.category?.name);
         const topPriced = rMenus.length > 0 ? [...rMenus].sort((a, b) => b.price - a.price)[0] : null;
         const featured = topPriced ? topPriced.name : "Menus coming soon";
@@ -279,7 +279,7 @@ export default function RestaurantsPage() {
                                         <span className="text-green-600 font-bold">${restaurant.minOrder}</span>
                                     </p>
                                     <Link
-                                        href="/menu"
+                                        href={`/restaurants/${restaurant.id}`}
                                         className="text-xs font-bold text-green-600 hover:text-green-700 inline-flex items-center gap-1 transition-colors"
                                     >
                                         View Menu
