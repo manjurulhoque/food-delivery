@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 class OrderStatus(models.TextChoices):
     PENDING = 'PENDING', _('Pending')
+    PAID = 'PAID', _('Paid')
     CONFIRMED = 'CONFIRMED', _('Confirmed')
     PREPARING = 'PREPARING', _('Preparing')
     CANCELED = 'CANCELED', _('Canceled')

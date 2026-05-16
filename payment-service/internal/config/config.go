@@ -7,6 +7,12 @@ import (
 type Config struct {
 	HTTP     HTTPConfig
 	Database DatabaseConfig
+	Kafka    KafkaConfig
+}
+
+type KafkaConfig struct {
+	Brokers string
+	GroupID string
 }
 
 type HTTPConfig struct {
@@ -34,6 +40,10 @@ func Load() *Config {
 			Password: getEnv("DATABASE_PASSWORD", "postgres"),
 			Name:     getEnv("DATABASE_NAME", "food_payments"),
 			SSLMode:  getEnv("DATABASE_SSLMODE", "disable"),
+		},
+		Kafka: KafkaConfig{
+			Brokers: getEnv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092"),
+			GroupID: getEnv("KAFKA_GROUP_ID", "payment-service"),
 		},
 	}
 }

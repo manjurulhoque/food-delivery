@@ -55,6 +55,13 @@ user_registered_consumer = AIOKafkaConsumer(
     group_id="notification-service",
     auto_offset_reset="latest",
 )
+payment_failed_consumer = AIOKafkaConsumer(
+    "payment.failed",
+    bootstrap_servers=KAFKA_INSTANCE,
+    value_deserializer=safe_deserializer,
+    group_id="notification-service",
+    auto_offset_reset="latest",
+)
 
 
 async def wait_for_kafka():
@@ -119,6 +126,39 @@ async def consume_user_registered():
             logger.info("Consumer for 'user.registered' stopped.")
 
 
+async def consume_payment_failed():
+    """Notify customer when payment fails."""
+    while True:
+        try:
+            await payment_failed_consumer.start()
+            logger.info("Consumer for 'payment.failed' started.")
+
+            async for message in payment_failed_consumer:
+                if not message.value:
+                    continue
+                logger.info("Received payment.failed: %s", message.value)
+                user_id = message.value.get("user_id")
+                order_id = message.value.get("order_id")
+                reason = message.value.get("reason", "Payment declined")
+                user_details = await get_user_details(user_id)
+                logger.info(
+                    "Payment failed notification — order_id=%s user=%s reason=%s details=%s",
+                    order_id,
+                    user_id,
+                    reason,
+                    user_details,
+                )
+        except Exception as e:
+            logger.error("Error in payment.failed consumer: %s", str(e))
+            await asyncio.sleep(5)
+        finally:
+            try:
+                await payment_failed_consumer.stop()
+            except Exception:
+                pass
+            logger.info("Consumer for 'payment.failed' stopped.")
+
+
 @app.on_event("startup")
 async def startup_event():
     """Startup event to initialize Kafka components."""
@@ -127,6 +167,7 @@ async def startup_event():
 
     tasks.append(asyncio.create_task(consume_order_placed()))
     tasks.append(asyncio.create_task(consume_user_registered()))
+    tasks.append(asyncio.create_task(consume_payment_failed()))
 
     await aioproducer.start()
 
@@ -144,6 +185,11 @@ async def shutdown_event():
 
     try:
         await user_registered_consumer.stop()
+    except Exception:
+        pass
+
+    try:
+        await payment_failed_consumer.stop()
     except Exception:
         pass
 

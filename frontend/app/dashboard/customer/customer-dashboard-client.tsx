@@ -10,7 +10,7 @@ import { useGetMyOrdersQuery } from "@/lib/services/order-api";
 import { useGetRestaurantsQuery } from "@/lib/services/restaurant-api";
 import { cn } from "@/lib/utils";
 
-const ACTIVE_STATUSES = new Set(["PENDING", "CONFIRMED", "PREPARING"]);
+const ACTIVE_STATUSES = new Set(["PENDING", "PAID", "CONFIRMED", "PREPARING"]);
 const PAST_STATUSES = new Set(["DELIVERED", "CANCELED", "REFUNDED"]);
 
 const customerSidebarMenus = [
@@ -35,6 +35,8 @@ function statusBadgeClass(status: string) {
     switch (status) {
         case "PENDING":
             return "bg-amber-50 text-amber-800 border-amber-200";
+        case "PAID":
+            return "bg-emerald-50 text-emerald-800 border-emerald-200";
         case "CONFIRMED":
             return "bg-sky-50 text-sky-800 border-sky-200";
         case "PREPARING":

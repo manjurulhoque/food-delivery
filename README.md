@@ -57,6 +57,9 @@ sequenceDiagram
     participant OS as order-service
     participant DBo as Postgres (food_orders)
     participant KF as Kafka
+    participant PS as payment-service
+    participant DBp as Postgres (food_payments)
+    participant OPC as order-payment-consumer
     participant RC as order-consumer (restaurant-service)
     participant DBr as Postgres (food_restaurants)
     participant NS as notification-service
@@ -74,6 +77,17 @@ sequenceDiagram
     KF->>RC: order.placed
     RC->>DBr: INSERT RestaurantOrder
     RC->>KF: publish order.confirmed
+  and Payment saga
+    KF->>PS: order.placed
+    PS->>DBp: INSERT Payment (PENDING)
+    PS->>PS: mock capture (amount > 0)
+    PS->>KF: payment.completed or payment.failed
+    KF->>OPC: payment.completed
+    OPC->>DBo: Order status → PAID
+    KF->>OPC: payment.failed
+    OPC->>DBo: Order status → CANCELED
+    KF->>NS: payment.failed
+    NS->>NS: Notify customer (log / email stub)
   and Notifications
     KF->>NS: order.placed
     NS->>NS: Load user (auth-service), log / notify
@@ -82,11 +96,17 @@ sequenceDiagram
 
 | Topic | Producer | Consumer(s) | Effect |
 |-------|----------|-------------|--------|
-| `order.placed` | order-service | **order-consumer** (restaurant-service), **notification-service** | Restaurant records the order; notification service fetches user details and handles alerts. |
+| `order.placed` | order-service | **order-consumer**, **payment-service**, **notification-service** | Restaurant copy; payment ledger + capture; order-placed notification. |
+| `payment.completed` | payment-service | **order-payment-consumer** | Order status `PENDING` → **`PAID`**. |
+| `payment.failed` | payment-service | **order-payment-consumer**, **notification-service** | Order `PENDING` → **`CANCELED`**; customer alert. |
 | `order.confirmed` | order-consumer | *(none wired yet)* | Emitted after `RestaurantOrder` is created. |
 | `order.updated` | order-service | *(consumers TBD)* | Emitted when a restaurant updates status via `POST /update-order/`. |
 
-The **order-consumer** container runs `python manage.py consume_order_events` (same image as restaurant-service, separate process in `docker-compose.yml`).
+Background workers in `docker-compose.yml`:
+
+- **order-consumer** — `python manage.py consume_order_events` (restaurant-service image)
+- **order-payment-consumer** — `python manage.py consume_payment_events` (order-service image)
+- **payment-service** — HTTP + in-process Kafka consumer for `order.placed`
 
 ### 4. Restaurant status updates (optional path)
 
@@ -98,22 +118,28 @@ POST http://localhost:7000/api/orders/update-order/
 
 That updates **`food_orders`** and publishes **`order.updated`** (authorization checks restaurant ownership via restaurant-service).
 
-### 5. Payment service (scaffold)
+### 5. Payment service (Kafka choreography)
 
-**payment-service** (Go, Gin, GORM, `:5005`, DB `food_payments`) is set up behind Kong at `/api/payments/` but is **not yet part of the checkout saga**. Checkout currently supports COD/card UI only; charging/capture will plug in here later.
+**payment-service** (Go, Gin, GORM, slog JSON logs) consumes **`order.placed`**, writes a row to **`food_payments`**, runs a **mock capture** (succeeds when `total_price > 0`), then publishes **`payment.completed`** or **`payment.failed`**.
+
+Health via Kong: `GET http://localhost:7000/api/payments/health`
+
+Payment statuses: `PENDING` → `COMPLETED` | `FAILED`
 
 ### Databases involved
 
 | Database | Service | Order-related data |
 |----------|---------|-------------------|
-| `food_orders` | order-service | `Order`, `OrderItem` |
+| `food_orders` | order-service | `Order`, `OrderItem` (statuses include **`PAID`**) |
+| `food_payments` | payment-service | `Payment` (linked by `order_id`) |
 | `food_restaurants` | restaurant-service | `RestaurantOrder` (from Kafka) |
 | `food_users` | auth-service | User identity for JWT |
 
 ### Prerequisites for the saga
 
-- Kafka topic **`order.placed`** must exist (see commands below).
-- **`order-consumer`** and **notification-service** must be running.
+- Kafka topics **`order.placed`**, **`payment.completed`**, **`payment.failed`** (see commands below).
+- **`payment-service`**, **`order-payment-consumer`**, **`order-consumer`**, and **notification-service** must be running.
+- Database **`food_payments`** must exist.
 - Customer JWT must be valid (auth-service access token; NextAuth refreshes it on the frontend).
 
 ---
@@ -182,6 +208,9 @@ create topics:
 
 ```bash
 docker exec kafka kafka-topics.sh --create --topic order.placed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+docker exec kafka kafka-topics.sh --create --topic payment.completed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+docker exec kafka kafka-topics.sh --create --topic payment.failed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+docker exec kafka kafka-topics.sh --create --topic order.confirmed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 docker exec kafka kafka-topics.sh --create --topic user.registered --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 ```
 

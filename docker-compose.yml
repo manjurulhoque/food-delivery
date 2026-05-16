@@ -273,6 +273,30 @@ services:
     networks:
       - food-network
 
+  order-payment-consumer:
+    image: order-service:latest
+    container_name: order-payment-consumer
+    command: python manage.py consume_payment_events
+    restart: unless-stopped
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      - SECRET_KEY=123456ABC
+      - DEBUG=True
+      - ALLOWED_HOSTS=*
+      - DATABASE_NAME=food_orders
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - AUTH_SERVICE_URL=http://auth-service:5000
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    volumes:
+      - ./order-service:/app
+    networks:
+      - food-network
+
   payment-service:
     image: payment-service:latest
     container_name: payment-service
@@ -284,6 +308,7 @@ services:
     #   - "5005:5005"
     # No host ports: reach via Kong only (http://localhost:7000/api/payments/)
     depends_on:
+      - kafka
       - postgres
     environment:
       - PORT=5005
@@ -295,6 +320,8 @@ services:
       - DATABASE_SSLMODE=disable
       - GIN_MODE=release
       - LOG_LEVEL=info
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_GROUP_ID=payment-service
     networks:
       - food-network
 
