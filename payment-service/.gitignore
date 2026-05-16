@@ -1,0 +1,4 @@
+/payment-server
+*.exe
+.env
+.idea/

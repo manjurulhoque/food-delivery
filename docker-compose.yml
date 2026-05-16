@@ -150,8 +150,9 @@ services:
     build:
       context: ./auth-service
       dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
+    # ports:
+    #   - "5000:5000"
+    # No host ports: reach via Kong only (http://localhost:7000/api/auth/)
     depends_on:
       kafka:
         condition: service_started
@@ -191,8 +192,9 @@ services:
     build:
       context: ./restaurant-service
       dockerfile: Dockerfile
-    ports:
-      - "5001:5001"
+    # ports:
+    #   - "5001:5001"
+    # No host ports: reach via Kong only (http://localhost:7000/api/restaurants/)
     depends_on:
       - kafka
       - postgres
@@ -247,8 +249,9 @@ services:
     build:
       context: ./order-service
       dockerfile: Dockerfile
-    ports:
-      - "5002:5002"
+    # ports:
+    #   - "5002:5002"
+    # No host ports: reach via Kong only (http://localhost:7000/api/orders/)
     depends_on:
       - kafka
       - postgres
@@ -270,6 +273,31 @@ services:
     networks:
       - food-network
 
+  payment-service:
+    image: payment-service:latest
+    container_name: payment-service
+    restart: unless-stopped
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    # ports:
+    #   - "5005:5005"
+    # No host ports: reach via Kong only (http://localhost:7000/api/payments/)
+    depends_on:
+      - postgres
+    environment:
+      - PORT=5005
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=food_payments
+      - DATABASE_SSLMODE=disable
+      - GIN_MODE=release
+      - LOG_LEVEL=info
+    networks:
+      - food-network
+
   notification-service:
     image: notification-service:latest
     container_name: notification-service
@@ -277,8 +305,9 @@ services:
     build:
       context: ./notification-service
       dockerfile: Dockerfile
-    ports:
-      - "5003:5003"
+    # ports:
+    #   - "5003:5003"
+    # No host ports: reach via Kong only (http://localhost:7000/api/notifications/)
     depends_on:
       - kafka
     environment:
@@ -296,8 +325,9 @@ services:
     container_name: delivery-service
     build:
       context: ./delivery-service
-    ports:
-      - "5004:5004"
+    # ports:
+    #   - "5004:5004"
+    # No host ports: internal/Kafka only until exposed via Kong
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - KAFKA_CLIENT_ID=delivery-service

@@ -36,6 +36,16 @@ services:
       - name: order-route
         paths:
           - /api/orders/
+  - name: payment-service
+    url: http://payment-service:5005
+    connect_timeout: 60000  # 60 seconds
+    write_timeout: 60000    # 60 seconds
+    read_timeout: 60000     # 60 seconds
+    routes:
+      - name: payment-route
+        paths:
+          - /api/payments/
+        strip_path: true
   - name: notification-service
     url: http://notification-service:5003
     connect_timeout: 60000  # 60 seconds
@@ -87,6 +97,25 @@ plugins:
     credentials: true
 - name: cors
   service: order-service
+  config:
+    origins:
+      - http://localhost:3000
+    methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    headers:
+      - Authorization
+      - Content-Type
+    exposed_headers:
+      - X-Custom-Header
+    max_age: 3600
+    credentials: true
+- name: cors
+  service: payment-service
   config:
     origins:
       - http://localhost:3000
