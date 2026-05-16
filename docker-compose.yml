@@ -335,13 +335,14 @@ services:
     # ports:
     #   - "5003:5003"
     # No host ports: reach via Kong only (http://localhost:7000/api/notifications/)
+    env_file:
+      - ./notification-service/.env
     depends_on:
       - kafka
     environment:
       - AUTH_SERVICE_URL=http://auth-service:5000
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - KAFKA_CLIENT_ID=notification-service
-      - KAFKA_GROUP_ID=notification-service-group
+      - KAFKA_GROUP_ID=notification-service
     volumes:
       - ./notification-service:/app
     networks:

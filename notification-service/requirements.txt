@@ -11,6 +11,7 @@ kafka-python==2.0.2
 packaging==24.2
 prometheus-fastapi-instrumentator==7.0.0
 prometheus_client==0.21.0
+aiosmtplib==3.0.2
 pydantic==2.9.2
 pydantic-settings==2.6.1
 pydantic_core==2.23.4

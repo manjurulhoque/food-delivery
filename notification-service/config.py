@@ -1,32 +1,38 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
 
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
 class Settings(BaseSettings):
-    # API Settings
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
     PROJECT_NAME: str = "Notification Service"
-    
-    # JWT Settings
-    JWT_SECRET_KEY: str = "z8B82VSkyLR7IUhDfe4ekI5aaU2DD5gWl08cP0P-pnpZHppnme6L54-ZpgXxnaIHdcMjWlJtPJRyMZzQruUmcA"
+
+    JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
-    
-    # Email Settings
-    SMTP_HOST: str = "smtp.gmail.com"
+
+    # SMTP (Mailtrap) — credentials in .env only, never commit
+    SMTP_HOST: str = "sandbox.smtp.mailtrap.io"
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    
-    # Service URLs
+    SMTP_FROM_EMAIL: str = "Foody <mail@foody.local>"
+    SMTP_STARTTLS: bool = True
+    SMTP_USE_SSL: bool = False
+    EMAIL_ENABLED: bool = True
+
     AUTH_SERVICE_URL: str = "http://auth-service:5000"
     ORDER_SERVICE_URL: str = "http://order-service:5002"
-    
-    # Kafka Settings
+
     KAFKA_BOOTSTRAP_SERVERS: str = "kafka:9092"
     KAFKA_GROUP_ID: str = "notification-service"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+
 
 @lru_cache
-def get_settings():
-    return Settings() 
+def get_settings() -> Settings:
+    return Settings()

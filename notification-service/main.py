@@ -8,7 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 
-from users import get_user_details
+from email_service import (
+    send_order_placed_email,
+    send_payment_failed_email,
+    send_welcome_email,
+)
+from users import get_user_details, user_email
 
 settings = get_settings()
 
@@ -92,6 +97,13 @@ async def consume_order_placed():
                 user_details = await get_user_details(user_id)
                 logger.info("User details: %s", user_details)
                 # Send notification to user
+                email = user_email(user_details)
+                if email and order_id is not None:
+                    await send_order_placed_email(
+                        to=email,
+                        order_id=int(order_id),
+                        total_price=float(message.value.get("total_price") or 0),
+                    )
         except Exception as e:
             logger.error("Error in order.placed consumer: %s", str(e))
             await asyncio.sleep(5)
@@ -112,6 +124,12 @@ async def consume_user_registered():
 
             async for message in user_registered_consumer:
                 logger.info(message.value)
+                payload = message.value
+                if isinstance(payload, dict):
+                    user = payload.get("user")
+                    email = user_email(user) if isinstance(user, dict) else None
+                    if email:
+                        await send_welcome_email(to=email)
 
         except Exception as e:
             logger.error(f"Consumer for 'user.registered' crashed: {e}")
@@ -148,6 +166,13 @@ async def consume_payment_failed():
                     reason,
                     user_details,
                 )
+                email = user_email(user_details)
+                if email and order_id is not None:
+                    await send_payment_failed_email(
+                        to=email,
+                        order_id=int(order_id),
+                        reason=str(reason),
+                    )
         except Exception as e:
             logger.error("Error in payment.failed consumer: %s", str(e))
             await asyncio.sleep(5)

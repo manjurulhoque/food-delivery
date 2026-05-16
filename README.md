@@ -239,3 +239,5 @@ For elastic dashboard:
 ```bash
 http://localhost:5601/app/management/kibana/dataViews
 ```
+
+docker compose up -d --build notification-service
