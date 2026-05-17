@@ -20,7 +20,11 @@ async def get_user_details(user_id: int | str | None) -> dict | None:
             response = await client.get(url)
 
         if response.status_code != 200:
-            logger.warning("auth_user_fetch_failed status=%s user_id=%s", response.status_code, user_id)
+            logger.warning(
+                "auth_user_fetch_failed status=%s user_id=%s",
+                response.status_code,
+                user_id,
+            )
             return None
 
         body = response.json()
@@ -38,3 +42,21 @@ def user_email(user: dict | None) -> str | None:
         return None
     email = user.get("email")
     return email if isinstance(email, str) and "@" in email else None
+
+
+def user_phone(user: dict | None) -> str | None:
+    """Phone from auth user profile when available (extend auth-service model later)."""
+    if not user:
+        return None
+    phone = user.get("phone") or user.get("phone_number")
+    if isinstance(phone, str) and len(phone) >= 8:
+        return phone
+    return None
+
+
+def user_push_token(user: dict | None) -> str | None:
+    """FCM device token when stored on user profile."""
+    if not user:
+        return None
+    token = user.get("fcm_token") or user.get("push_token")
+    return token if isinstance(token, str) and len(token) > 10 else None

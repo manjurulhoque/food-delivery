@@ -8,12 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 
-from email_service import (
-    send_order_placed_email,
-    send_payment_failed_email,
-    send_welcome_email,
+from notifications import (
+    notify_order_placed,
+    notify_payment_failed,
+    notify_user_registered,
 )
-from users import get_user_details, user_email
+from notifications.factory import ChannelFactory
+from users import get_user_details
 
 settings = get_settings()
 
@@ -97,10 +98,9 @@ async def consume_order_placed():
                 user_details = await get_user_details(user_id)
                 logger.info("User details: %s", user_details)
                 # Send notification to user
-                email = user_email(user_details)
-                if email and order_id is not None:
-                    await send_order_placed_email(
-                        to=email,
+                if order_id is not None:
+                    await notify_order_placed(
+                        user_details,
                         order_id=int(order_id),
                         total_price=float(message.value.get("total_price") or 0),
                     )
@@ -126,10 +126,14 @@ async def consume_user_registered():
                 logger.info(message.value)
                 payload = message.value
                 if isinstance(payload, dict):
-                    user = payload.get("user")
-                    email = user_email(user) if isinstance(user, dict) else None
-                    if email:
-                        await send_welcome_email(to=email)
+                    user = payload.get("user") if isinstance(payload.get("user"), dict) else None
+                    if user:
+                        await notify_user_registered(user)
+                    else:
+                        user_id = payload.get("id")
+                        details = await get_user_details(user_id)
+                        if details:
+                            await notify_user_registered(details)
 
         except Exception as e:
             logger.error(f"Consumer for 'user.registered' crashed: {e}")
@@ -166,10 +170,9 @@ async def consume_payment_failed():
                     reason,
                     user_details,
                 )
-                email = user_email(user_details)
-                if email and order_id is not None:
-                    await send_payment_failed_email(
-                        to=email,
+                if order_id is not None:
+                    await notify_payment_failed(
+                        user_details,
                         order_id=int(order_id),
                         reason=str(reason),
                     )
@@ -187,7 +190,9 @@ async def consume_payment_failed():
 @app.on_event("startup")
 async def startup_event():
     """Startup event to initialize Kafka components."""
-    # Start consumers concurrently
+    enabled = [c.channel_type.value for c in ChannelFactory.create_all_enabled()]
+    logger.info("notification channels enabled: %s", enabled or ["none"])
+
     await wait_for_kafka()
 
     tasks.append(asyncio.create_task(consume_order_placed()))

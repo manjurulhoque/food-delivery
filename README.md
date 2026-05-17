@@ -241,3 +241,8 @@ http://localhost:5601/app/management/kibana/dataViews
 ```
 
 docker compose up -d --build notification-service
+
+For notification service:
+```bash
+cp .env.example .env
+```

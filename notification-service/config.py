@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
 
-    # SMTP (Mailtrap) — credentials in .env only, never commit
+    # Email — SMTP (Mailtrap)
+    EMAIL_ENABLED: bool = True
     SMTP_HOST: str = "sandbox.smtp.mailtrap.io"
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
@@ -24,7 +25,16 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = "Foody <mail@foody.local>"
     SMTP_STARTTLS: bool = True
     SMTP_USE_SSL: bool = False
-    EMAIL_ENABLED: bool = True
+
+    # SMS — Twilio
+    SMS_ENABLED: bool = False
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM_NUMBER: str = ""
+
+    # Push — Firebase Cloud Messaging
+    PUSH_ENABLED: bool = False
+    FCM_SERVER_KEY: str = ""
 
     AUTH_SERVICE_URL: str = "http://auth-service:5000"
     ORDER_SERVICE_URL: str = "http://order-service:5002"
