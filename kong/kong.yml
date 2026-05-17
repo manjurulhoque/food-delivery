@@ -55,6 +55,16 @@ services:
       - name: notification-route
         paths:
           - /api/notifications/
+  - name: delivery-service
+    url: http://delivery-service:5004
+    connect_timeout: 60000  # 60 seconds
+    write_timeout: 60000    # 60 seconds
+    read_timeout: 60000     # 60 seconds
+    routes:
+      - name: delivery-route
+        paths:
+          - /api/deliveries/
+        strip_path: true
 
 plugins:
 - name: cors
@@ -116,6 +126,25 @@ plugins:
     credentials: true
 - name: cors
   service: payment-service
+  config:
+    origins:
+      - http://localhost:3000
+    methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    headers:
+      - Authorization
+      - Content-Type
+    exposed_headers:
+      - X-Custom-Header
+    max_age: 3600
+    credentials: true
+- name: cors
+  service: delivery-service
   config:
     origins:
       - http://localhost:3000

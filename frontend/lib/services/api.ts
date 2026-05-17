@@ -5,6 +5,7 @@ export const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? "http:
 export const AUTH_BASE_URL = `${API_GATEWAY_URL}/api/auth`;
 export const RESTAURANT_BASE_URL = `${API_GATEWAY_URL}/api/restaurants`;
 export const ORDER_BASE_URL = `${API_GATEWAY_URL}/api/orders`;
+export const DELIVERY_BASE_URL = `${API_GATEWAY_URL}/api/deliveries`;
 
 export const api = createApi({
     reducerPath: "foodyApi",
@@ -18,6 +19,6 @@ export const api = createApi({
             return headers;
         },
     }),
-    tagTypes: ["Auth", "Menu", "Restaurant", "Order"],
+    tagTypes: ["Auth", "Menu", "Restaurant", "Order", "Delivery"],
     endpoints: () => ({}),
 });

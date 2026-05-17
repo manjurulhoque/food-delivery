@@ -17,6 +17,26 @@ router.post("/", async (req, res) => {
     }
 });
 
+router.get("/active", async (req, res) => {
+    try {
+        const deliveries = await deliveryService.getActiveDeliveries();
+        res.json(deliveries);
+    } catch (error) {
+        console.error("Error getting active deliveries:", error);
+        res.status(500).json({ error: "Failed to get active deliveries" });
+    }
+});
+
+router.get("/drivers/available", async (req, res) => {
+    try {
+        const drivers = await deliveryService.getAvailableDrivers();
+        res.json(drivers);
+    } catch (error) {
+        console.error("Error getting available drivers:", error);
+        res.status(500).json({ error: "Failed to get available drivers" });
+    }
+});
+
 // Get delivery by ID
 router.get("/:id", async (req, res) => {
     try {
@@ -64,17 +84,6 @@ router.post("/:id/assign", async (req, res) => {
     }
 });
 
-// Get available drivers
-router.get("/drivers/available", async (req, res) => {
-    try {
-        const drivers = await deliveryService.getAvailableDrivers();
-        res.json(drivers);
-    } catch (error) {
-        console.error("Error getting available drivers:", error);
-        res.status(500).json({ error: "Failed to get available drivers" });
-    }
-});
-
 // Update driver location
 router.patch("/drivers/:id/location", async (req, res) => {
     try {
@@ -93,17 +102,6 @@ router.patch("/drivers/:id/location", async (req, res) => {
     } catch (error) {
         console.error("Error updating driver location:", error);
         res.status(500).json({ error: "Failed to update driver location" });
-    }
-});
-
-// Get active deliveries
-router.get("/active", async (req, res) => {
-    try {
-        const deliveries = await deliveryService.getActiveDeliveries();
-        res.json(deliveries);
-    } catch (error) {
-        console.error("Error getting active deliveries:", error);
-        res.status(500).json({ error: "Failed to get active deliveries" });
     }
 });
 

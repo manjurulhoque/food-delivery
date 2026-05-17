@@ -29,8 +29,8 @@ AppDataSource.initialize()
         console.error("Error during database initialization:", error);
     });
 
-// Routes
-app.use("/api/deliveries", deliveryRoutes);
+// Routes at root — Kong strips /api/deliveries/ before proxying
+app.use("/", deliveryRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
