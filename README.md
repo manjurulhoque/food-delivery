@@ -10,9 +10,9 @@ Placing an order is a **choreography saga**: each service reacts to events on it
 |------|----------------|
 | Menu discovery | The Next.js app loads menus/restaurants via Kong → **restaurant-service** (`GET /api/restaurants/...`). |
 | Add to bag | Items are stored in the browser **`localStorage`** (`lib/bag.ts`). No backend call yet. |
-| Cart / checkout | `/cart` and `/checkout` read the bag client-side and compute subtotal, tax, and delivery fee. |
+| Cart / checkout | `/cart` and `/checkout` read the bag client-side and compute subtotal, tax, and delivery fee. **`/checkout` requires a logged-in customer**; guests are prompted to sign in (redirects back via `callbackUrl=/checkout`). |
 
-The user must be **logged in** (NextAuth + **auth-service** JWT). The access token is attached to API calls from `lib/services/api.ts` (`Authorization: Bearer …`).
+The access token is attached to API calls from `lib/services/api.ts` (`Authorization: Bearer …`). Login and register honor `?callbackUrl=` so users return to checkout after signing in.
 
 ### 2. Place order (synchronous HTTP)
 
@@ -87,10 +87,10 @@ sequenceDiagram
     KF->>OPC: payment.failed
     OPC->>DBo: Order status → CANCELED
     KF->>NS: payment.failed
-    NS->>NS: Notify customer (log / email stub)
+    NS->>NS: Email / SMS / push (enabled channels)
   and Notifications
     KF->>NS: order.placed
-    NS->>NS: Load user (auth-service), log / notify
+    NS->>NS: Load user (auth-service), dispatch notifications
   end
 ```
 
@@ -126,6 +126,37 @@ Health via Kong: `GET http://localhost:7000/api/payments/health`
 
 Payment statuses: `PENDING` → `COMPLETED` | `FAILED`
 
+### 6. Notification service (multi-channel)
+
+**notification-service** (FastAPI) consumes Kafka events and sends notifications through pluggable channels:
+
+| Pattern | Module | Role |
+|---------|--------|------|
+| Strategy | `notifications/channels/` | `EmailChannel`, `SmsChannel`, `PushChannel` |
+| Factory | `notifications/factory.py` | Creates channels by type |
+| Facade | `notifications/dispatcher.py` | Dispatches one message to all enabled channels |
+| Events | `notifications/events.py` | Templates for `order.placed`, `payment.failed`, `user.registered` |
+
+Configure channels in `notification-service/.env` (copy from `.env.example`):
+
+- **Email** — Mailtrap SMTP (`EMAIL_ENABLED`, `SMTP_*`)
+- **SMS** — Twilio (`SMS_ENABLED`, `TWILIO_*`)
+- **Push** — FCM (`PUSH_ENABLED`, `FCM_SERVER_KEY`)
+
+### 7. Delivery service (HTTP API)
+
+**delivery-service** (Node/TypeORM) exposes delivery jobs via Kong. Kafka wiring for the order saga is not connected yet.
+
+```http
+GET  http://localhost:7000/api/deliveries/active
+GET  http://localhost:7000/api/deliveries/:id
+POST http://localhost:7000/api/deliveries/
+PATCH http://localhost:7000/api/deliveries/:id/status
+POST http://localhost:7000/api/deliveries/:id/assign
+```
+
+Frontend RTK Query: `frontend/lib/services/delivery-api.ts`
+
 ### Databases involved
 
 | Database | Service | Order-related data |
@@ -134,6 +165,7 @@ Payment statuses: `PENDING` → `COMPLETED` | `FAILED`
 | `food_payments` | payment-service | `Payment` (linked by `order_id`) |
 | `food_restaurants` | restaurant-service | `RestaurantOrder` (from Kafka) |
 | `food_users` | auth-service | User identity for JWT |
+| `food_deliveries` | delivery-service | `Delivery` (driver assignment, status) |
 
 ### Prerequisites for the saga
 
@@ -170,6 +202,7 @@ http://localhost:7000/api/restaurants/
 http://localhost:7000/api/orders/
 http://localhost:7000/api/payments/
 http://localhost:7000/api/notifications/
+http://localhost:7000/api/deliveries/
 ```
 
 Frontend (Next.js): `http://localhost:3000` — checkout at `/checkout`, customer orders at `/dashboard/customer`.
@@ -220,10 +253,21 @@ delete topic:
 docker exec kafka kafka-topics.sh --delete --topic order.placed --bootstrap-server localhost:9092
 ```
 
-seed restaurant menu category:
+seed restaurant menu categories:
+
 ```bash
 docker exec -i restaurant-service python manage.py seed_menu_categories
 ```
+
+seed auth users (100 customers, 100 drivers, 50 restaurant owners):
+
+```bash
+docker exec -it auth-service python manage.py seed_users
+```
+
+Default password: `password123`. Example logins: `customer001@foody.test`, `driver001@foody.test`, `restaurant001@foody.test`.
+
+Optional flags: `--customers`, `--drivers`, `--restaurants`, `--password`, `--domain`. Re-running skips emails that already exist.
 
 create super-user in auth-service:
 ```bash
@@ -235,14 +279,20 @@ then type:
 python manage.py createsuperuser
 ```
 
-For elastic dashboard: 
+For elastic dashboard:
+
 ```bash
 http://localhost:5601/app/management/kibana/dataViews
 ```
 
-docker compose up -d --build notification-service
+Start notification service only:
 
-For notification service:
 ```bash
-cp .env.example .env
+docker-compose up -d --build notification-service
+```
+
+Notification service env setup:
+
+```bash
+cd notification-service && cp .env.example .env
 ```
