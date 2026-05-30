@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MapPin, Clock3, ChevronRight, Phone, Loader2 } from "lucide-react";
 import { Stars } from "@/components/stars";
+import { FoodyRestaurantPlaceholder } from "@/components/foody-restaurant-placeholder";
 import {
     useGetAvailableMenusQuery,
     useGetRestaurantsQuery,
@@ -195,14 +196,17 @@ export default function RestaurantsPage() {
                         {Array.from({ length: 6 }).map((_, i) => (
                             <div
                                 key={i}
-                                className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse"
+                                className="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse"
                             >
-                                <div className="h-5 bg-gray-100 rounded w-2/3 mb-3" />
-                                <div className="h-3 bg-gray-100 rounded w-1/3 mb-4" />
-                                <div className="h-3 bg-gray-100 rounded w-full mb-2" />
-                                <div className="h-3 bg-gray-100 rounded w-4/5 mb-4" />
-                                <div className="h-10 bg-gray-100 rounded-xl mb-4" />
-                                <div className="h-8 bg-gray-100 rounded w-full" />
+                                <div className="h-36 bg-[#E8F7EF]" />
+                                <div className="p-5">
+                                    <div className="h-5 bg-gray-100 rounded w-2/3 mb-3" />
+                                    <div className="h-3 bg-gray-100 rounded w-1/3 mb-4" />
+                                    <div className="h-3 bg-gray-100 rounded w-full mb-2" />
+                                    <div className="h-3 bg-gray-100 rounded w-4/5 mb-4" />
+                                    <div className="h-10 bg-gray-100 rounded-xl mb-4" />
+                                    <div className="h-8 bg-gray-100 rounded w-full" />
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -224,8 +228,17 @@ export default function RestaurantsPage() {
                         {filteredCards.map((restaurant) => (
                             <article
                                 key={restaurant.id}
-                                className="bg-white rounded-2xl border border-gray-100 p-5 hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                                className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-200 flex flex-col"
                             >
+                                <div className="relative flex items-center justify-center h-36 bg-[#E8F7EF]">
+                                    <FoodyRestaurantPlaceholder
+                                        size={96}
+                                        label={restaurant.name}
+                                        className="relative z-0"
+                                    />
+                                </div>
+
+                                <div className="p-5 flex flex-col flex-1">
                                 <div className="flex items-start justify-between gap-3 mb-4">
                                     <div>
                                         <h2 className="font-[Poppins] font-bold text-lg text-gray-900">
@@ -285,6 +298,7 @@ export default function RestaurantsPage() {
                                         View Menu
                                         <ChevronRight size={13} />
                                     </Link>
+                                </div>
                                 </div>
                             </article>
                         ))}

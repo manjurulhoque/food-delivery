@@ -1,20 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { Mail, Lock, ChevronRight } from "lucide-react";
 import { useRegisterMutation } from "@/lib/services/auth-api";
 
-export default function RegisterPage() {
+function RegisterForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams.get("callbackUrl") || "/";
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [registerUser] = useRegisterMutation();
+
+    const loginHref =
+        callbackUrl !== "/"
+            ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+            : "/login";
 
     const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -44,7 +52,7 @@ export default function RegisterPage() {
                 throw new Error("Account created, but auto-login failed. Please login manually.");
             }
 
-            router.push("/");
+            router.push(callbackUrl.startsWith("/") ? callbackUrl : "/");
             router.refresh();
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Registration failed");
@@ -53,6 +61,83 @@ export default function RegisterPage() {
         }
     };
 
+    return (
+        <>
+            <form className="space-y-4" onSubmit={onSubmit}>
+                <label className="block">
+                    <span className="text-xs font-bold text-gray-600 mb-1.5 block">Email Address</span>
+                    <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-green-400 transition-colors">
+                        <Mail size={16} className="text-gray-400" />
+                        <input
+                            type="email"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            className="w-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
+                            required
+                        />
+                    </div>
+                </label>
+
+                <label className="block">
+                    <span className="text-xs font-bold text-gray-600 mb-1.5 block">Password</span>
+                    <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-green-400 transition-colors">
+                        <Lock size={16} className="text-gray-400" />
+                        <input
+                            type="password"
+                            placeholder="Create password"
+                            value={password}
+                            onChange={(event) => setPassword(event.target.value)}
+                            className="w-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
+                            minLength={6}
+                            required
+                        />
+                    </div>
+                </label>
+
+                <label className="block">
+                    <span className="text-xs font-bold text-gray-600 mb-1.5 block">Confirm Password</span>
+                    <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-green-400 transition-colors">
+                        <Lock size={16} className="text-gray-400" />
+                        <input
+                            type="password"
+                            placeholder="Confirm password"
+                            value={confirmPassword}
+                            onChange={(event) => setConfirmPassword(event.target.value)}
+                            className="w-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
+                            minLength={6}
+                            required
+                        />
+                    </div>
+                </label>
+
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2.5 rounded-lg transition-colors inline-flex items-center justify-center gap-1.5"
+                >
+                    {isSubmitting ? "Creating Account..." : "Create Account"}
+                    <ChevronRight size={16} />
+                </button>
+            </form>
+
+            {error && (
+                <p className="mt-4 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                    {error}
+                </p>
+            )}
+
+            <p className="text-xs text-gray-500 mt-5 text-center">
+                Already have an account?{" "}
+                <Link href={loginHref} className="text-green-600 font-bold hover:text-green-700">
+                    Login
+                </Link>
+            </p>
+        </>
+    );
+}
+
+export default function RegisterPage() {
     return (
         <main className="min-h-[calc(100vh-112px)] bg-gray-50">
             <section className="bg-gradient-to-br from-green-600 via-green-500 to-emerald-700 relative overflow-hidden">
@@ -73,76 +158,9 @@ export default function RegisterPage() {
                     <h2 className="font-[Poppins] font-bold text-xl text-green-600 mb-1">Register</h2>
                     <p className="text-sm text-gray-500 mb-6">Set up your account in less than a minute.</p>
 
-                    <form className="space-y-4" onSubmit={onSubmit}>
-                        <label className="block">
-                            <span className="text-xs font-bold text-gray-600 mb-1.5 block">Email Address</span>
-                            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-green-400 transition-colors">
-                                <Mail size={16} className="text-gray-400" />
-                                <input
-                                    type="email"
-                                    placeholder="you@example.com"
-                                    value={email}
-                                    onChange={(event) => setEmail(event.target.value)}
-                                    className="w-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
-                                    required
-                                />
-                            </div>
-                        </label>
-
-                        <label className="block">
-                            <span className="text-xs font-bold text-gray-600 mb-1.5 block">Password</span>
-                            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-green-400 transition-colors">
-                                <Lock size={16} className="text-gray-400" />
-                                <input
-                                    type="password"
-                                    placeholder="Create password"
-                                    value={password}
-                                    onChange={(event) => setPassword(event.target.value)}
-                                    className="w-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
-                                    minLength={6}
-                                    required
-                                />
-                            </div>
-                        </label>
-
-                        <label className="block">
-                            <span className="text-xs font-bold text-gray-600 mb-1.5 block">Confirm Password</span>
-                            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-green-400 transition-colors">
-                                <Lock size={16} className="text-gray-400" />
-                                <input
-                                    type="password"
-                                    placeholder="Confirm password"
-                                    value={confirmPassword}
-                                    onChange={(event) => setConfirmPassword(event.target.value)}
-                                    className="w-full text-sm text-gray-700 outline-none placeholder:text-gray-400"
-                                    minLength={6}
-                                    required
-                                />
-                            </div>
-                        </label>
-
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2.5 rounded-lg transition-colors inline-flex items-center justify-center gap-1.5"
-                        >
-                            {isSubmitting ? "Creating Account..." : "Create Account"}
-                            <ChevronRight size={16} />
-                        </button>
-                    </form>
-
-                    {error && (
-                        <p className="mt-4 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                            {error}
-                        </p>
-                    )}
-
-                    <p className="text-xs text-gray-500 mt-5 text-center">
-                        Already have an account?{" "}
-                        <Link href="/login" className="text-green-600 font-bold hover:text-green-700">
-                            Login
-                        </Link>
-                    </p>
+                    <Suspense fallback={<div className="h-56 animate-pulse rounded-lg bg-gray-100" />}>
+                        <RegisterForm />
+                    </Suspense>
                 </div>
             </section>
         </main>

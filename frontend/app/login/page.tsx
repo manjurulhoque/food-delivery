@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { Lock, Mail, ChevronRight } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams.get("callbackUrl") || "/";
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +32,7 @@ export default function LoginPage() {
                 throw new Error("Invalid credentials");
             }
 
-            router.push("/");
+            router.push(callbackUrl.startsWith("/") ? callbackUrl : "/");
             router.refresh();
         } catch (submitError) {
             setError(submitError instanceof Error ? submitError.message : "Login failed");
@@ -38,27 +41,14 @@ export default function LoginPage() {
         }
     };
 
+    const registerHref =
+        callbackUrl !== "/"
+            ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`
+            : "/register";
+
     return (
-        <main className="min-h-[calc(100vh-112px)] bg-gray-50">
-            <section className="bg-gradient-to-br from-green-600 via-green-500 to-emerald-700 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
-                <div className="absolute bottom-0 left-1/4 w-48 h-48 bg-white/5 rounded-full translate-y-1/2" />
-                <div className="max-w-6xl mx-auto px-5 py-10 relative z-10">
-                    <h1 className="font-[Poppins] font-bold text-3xl md:text-4xl text-white leading-tight mb-2">
-                        Welcome Back
-                    </h1>
-                    <p className="text-green-100 text-sm max-w-md">
-                        Login to continue your orders, track deliveries, and save your favorite dishes.
-                    </p>
-                </div>
-            </section>
-
-            <section className="max-w-6xl mx-auto px-5 py-10">
-                <div className="max-w-md mx-auto bg-white rounded-2xl border border-gray-100 p-6 md:p-8">
-                    <h2 className="font-[Poppins] font-bold text-xl text-green-600 mb-1">Login</h2>
-                    <p className="text-sm text-gray-500 mb-6">Enter your credentials to access your account.</p>
-
-                    <form className="space-y-4" onSubmit={onSubmit}>
+        <>
+            <form className="space-y-4" onSubmit={onSubmit}>
                         <label className="block">
                             <span className="text-xs font-bold text-gray-600 mb-1.5 block">Email Address</span>
                             <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-green-400 transition-colors">
@@ -117,10 +107,38 @@ export default function LoginPage() {
 
                     <p className="text-xs text-gray-500 mt-5 text-center">
                         Don&apos;t have an account?{" "}
-                        <Link href="/register" className="text-green-600 font-bold hover:text-green-700">
+                        <Link href={registerHref} className="text-green-600 font-bold hover:text-green-700">
                             Register
                         </Link>
                     </p>
+        </>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <main className="min-h-[calc(100vh-112px)] bg-gray-50">
+            <section className="bg-gradient-to-br from-green-600 via-green-500 to-emerald-700 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
+                <div className="absolute bottom-0 left-1/4 w-48 h-48 bg-white/5 rounded-full translate-y-1/2" />
+                <div className="max-w-6xl mx-auto px-5 py-10 relative z-10">
+                    <h1 className="font-[Poppins] font-bold text-3xl md:text-4xl text-white leading-tight mb-2">
+                        Welcome Back
+                    </h1>
+                    <p className="text-green-100 text-sm max-w-md">
+                        Login to continue your orders, track deliveries, and save your favorite dishes.
+                    </p>
+                </div>
+            </section>
+
+            <section className="max-w-6xl mx-auto px-5 py-10">
+                <div className="max-w-md mx-auto bg-white rounded-2xl border border-gray-100 p-6 md:p-8">
+                    <h2 className="font-[Poppins] font-bold text-xl text-green-600 mb-1">Login</h2>
+                    <p className="text-sm text-gray-500 mb-6">Enter your credentials to access your account.</p>
+
+                    <Suspense fallback={<div className="h-48 animate-pulse rounded-lg bg-gray-100" />}>
+                        <LoginForm />
+                    </Suspense>
                 </div>
             </section>
         </main>

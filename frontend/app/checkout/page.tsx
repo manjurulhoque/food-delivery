@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ChevronRight, ShoppingBag } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { CheckCircle2, ChevronRight, LogIn, ShoppingBag } from "lucide-react";
 import {
     FOODY_BAG_UPDATED_EVENT,
     clearBag,
@@ -16,6 +17,10 @@ const DELIVERY_FEE = 4.99;
 const TAX_RATE = 0.08;
 
 export default function CheckoutPage() {
+    const { status: authStatus } = useSession();
+    const isAuthed = authStatus === "authenticated";
+    const isAuthLoading = authStatus === "loading";
+
     const [createOrder, { isLoading: isPlacingOrder }] = useCreateOrderMutation();
     const [items, setItems] = useState<BagItem[]>([]);
     const [isBagLoading, setIsBagLoading] = useState(true);
@@ -48,6 +53,16 @@ export default function CheckoutPage() {
 
     const onPlaceOrder: React.FormEventHandler<HTMLFormElement> = async (event) => {
         event.preventDefault();
+
+        if (!isAuthed) {
+            toast({
+                title: "Sign in required",
+                description: "Log in to place your order.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         if (items.length === 0) {
             toast({
                 title: "Your bag is empty",
@@ -111,7 +126,7 @@ export default function CheckoutPage() {
             </section>
 
             <section className="max-w-6xl mx-auto px-5 py-8">
-                {isBagLoading ? (
+                {isAuthLoading || isBagLoading ? (
                     <div className="bg-white rounded-2xl border border-gray-100 p-10">
                         <div className="animate-pulse space-y-4">
                             <div className="h-6 w-44 bg-gray-100 rounded" />
@@ -119,6 +134,40 @@ export default function CheckoutPage() {
                             <div className="h-12 w-full bg-gray-100 rounded-lg" />
                             <div className="h-24 w-full bg-gray-100 rounded-lg" />
                             <div className="h-10 w-40 bg-gray-100 rounded-lg" />
+                        </div>
+                    </div>
+                ) : !isAuthed ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-700 mx-auto mb-4 flex items-center justify-center">
+                            <LogIn size={24} />
+                        </div>
+                        <h2 className="font-[Poppins] font-bold text-xl text-gray-900 mb-2">
+                            Sign in to checkout
+                        </h2>
+                        <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
+                            You need a Foody account to place an order. Your bag is saved in this browser
+                            until you return.
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-3">
+                            <Link
+                                href="/login?callbackUrl=%2Fcheckout"
+                                className="inline-flex items-center gap-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2.5 px-5 transition-colors"
+                            >
+                                Log in
+                                <ChevronRight size={16} />
+                            </Link>
+                            <Link
+                                href="/register?callbackUrl=%2Fcheckout"
+                                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 hover:border-gray-300 text-sm font-semibold py-2.5 px-5 transition-colors text-gray-700"
+                            >
+                                Create account
+                            </Link>
+                            <Link
+                                href="/cart"
+                                className="inline-flex items-center gap-2 text-sm font-semibold text-green-700 hover:text-green-800"
+                            >
+                                Back to cart
+                            </Link>
                         </div>
                     </div>
                 ) : isPlaced ? (

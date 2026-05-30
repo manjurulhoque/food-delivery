@@ -1,5 +1,4 @@
 import express from "express";
-import { Delivery, DeliveryStatus } from "../types/delivery";
 import { DeliveryService } from "../services/delivery.service";
 
 const router = express.Router();
