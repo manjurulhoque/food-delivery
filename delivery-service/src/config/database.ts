@@ -1,5 +1,6 @@
 import { DataSource } from "typeorm";
 import { Delivery } from "../models/delivery";
+import { Driver } from "../models/driver";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -13,7 +14,7 @@ export const AppDataSource = new DataSource({
     database: process.env.DATABASE_NAME || "food_deliveries",
     synchronize: true,
     logging: true,
-    entities: [Delivery],
+    entities: [Delivery, Driver],
     subscribers: [],
     migrations: [],
 });

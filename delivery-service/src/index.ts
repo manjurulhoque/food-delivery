@@ -3,6 +3,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { Kafka } from "kafkajs";
 import deliveryRoutes from "./routes/delivery";
+import driverRoutes from "./routes/driver";
 import { AppDataSource } from "./config/database";
 
 // Load environment variables
@@ -31,6 +32,7 @@ AppDataSource.initialize()
 
 // Routes at root — Kong strips /api/deliveries/ before proxying
 app.use("/", deliveryRoutes);
+app.use("/drivers", driverRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

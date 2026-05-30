@@ -7,6 +7,8 @@
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
     "build": "tsc",
+    "seed:drivers": "node dist/scripts/seed-drivers.js",
+    "seed:drivers:dev": "ts-node src/scripts/seed-drivers.ts",
     "test": "jest",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/database.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/database.ts"

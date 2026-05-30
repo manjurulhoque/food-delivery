@@ -24,10 +24,3 @@ export type Delivery = {
     createdAt: string;
     updatedAt: string;
 };
-
-export type AvailableDriver = {
-    id: string;
-    name?: string;
-    phoneNumber?: string;
-    isAvailable?: boolean;
-};

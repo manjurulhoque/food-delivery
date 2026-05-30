@@ -357,12 +357,14 @@ services:
     #   - "5004:5004"
     # No host ports: internal/Kafka only until exposed via Kong
     environment:
+      - AUTH_SERVICE_URL=http://auth-service:5000
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - KAFKA_CLIENT_ID=delivery-service
       - KAFKA_GROUP_ID=delivery-service-group
     depends_on:
       - kafka
       - postgres
+      - auth-service
     networks:
       - food-network
 

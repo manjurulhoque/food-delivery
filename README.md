@@ -145,14 +145,33 @@ Configure channels in `notification-service/.env` (copy from `.env.example`):
 
 ### 7. Delivery service (HTTP API)
 
-**delivery-service** (Node/TypeORM) exposes delivery jobs via Kong. Kafka wiring for the order saga is not connected yet.
+**delivery-service** (Node/TypeORM) owns **delivery jobs** and **driver profiles** (Option B: fleet data lives here, not in auth). Kafka wiring for the order saga is not connected yet.
+
+**Driver availability** = `isOnline` on the driver profile **and** no active delivery in `ASSIGNED` / `PICKED_UP` / `IN_TRANSIT`.
 
 ```http
+# Deliveries
 GET  http://localhost:7000/api/deliveries/active
 GET  http://localhost:7000/api/deliveries/:id
 POST http://localhost:7000/api/deliveries/
 PATCH http://localhost:7000/api/deliveries/:id/status
-POST http://localhost:7000/api/deliveries/:id/assign
+POST http://localhost:7000/api/deliveries/:id/assign   # body: { "driverId": "<auth user id>" }
+
+# Driver profiles (delivery-service)
+GET   http://localhost:7000/api/deliveries/drivers
+GET   http://localhost:7000/api/deliveries/drivers/available
+GET   http://localhost:7000/api/deliveries/drivers/:userId
+POST  http://localhost:7000/api/deliveries/drivers
+POST  http://localhost:7000/api/deliveries/drivers/sync   # pull is_driver users from auth
+PATCH http://localhost:7000/api/deliveries/drivers/:userId/availability   # { "isOnline": true }
+PATCH http://localhost:7000/api/deliveries/drivers/:userId/location
+```
+
+Auth internal (service-to-service, not via Kong):
+
+```http
+GET http://auth-service:5000/internal/users/drivers/
+GET http://auth-service:5000/internal/users/:id/
 ```
 
 Frontend RTK Query: `frontend/lib/services/delivery-api.ts`
@@ -165,7 +184,7 @@ Frontend RTK Query: `frontend/lib/services/delivery-api.ts`
 | `food_payments` | payment-service | `Payment` (linked by `order_id`) |
 | `food_restaurants` | restaurant-service | `RestaurantOrder` (from Kafka) |
 | `food_users` | auth-service | User identity for JWT |
-| `food_deliveries` | delivery-service | `Delivery` (driver assignment, status) |
+| `food_deliveries` | delivery-service | `Delivery`, **`Driver`** (profile, online, location) |
 
 ### Prerequisites for the saga
 
@@ -268,6 +287,16 @@ docker exec -it auth-service python manage.py seed_users
 Default password: `password123`. Example logins: `customer001@foody.test`, `driver001@foody.test`, `restaurant001@foody.test`.
 
 Optional flags: `--customers`, `--drivers`, `--restaurants`, `--password`, `--domain`. Re-running skips emails that already exist.
+
+seed driver profiles in delivery-service (after auth users exist):
+
+```bash
+docker exec -it delivery-service npm run seed:drivers
+```
+
+Or sync via HTTP: `POST http://localhost:7000/api/deliveries/drivers/sync`
+
+Creates a `Driver` row per auth user with `is_driver=true` (`userId` links to auth). ~1/3 seeded online for testing.
 
 create super-user in auth-service:
 ```bash

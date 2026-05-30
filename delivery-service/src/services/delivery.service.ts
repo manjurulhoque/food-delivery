@@ -2,15 +2,15 @@ import { AppDataSource } from "../config/database";
 import { Delivery } from "../models/delivery";
 import { DeliveryStatus } from "../types/delivery";
 import { Repository } from "typeorm";
-import axios from "axios";
+import { DriverService } from "./driver.service";
 
 export class DeliveryService {
     private deliveryRepository: Repository<Delivery>;
-    private authServiceUrl: string;
+    private driverService: DriverService;
 
     constructor() {
         this.deliveryRepository = AppDataSource.getRepository(Delivery);
-        this.authServiceUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:5000";
+        this.driverService = new DriverService();
     }
 
     async createDelivery(deliveryData: Partial<Delivery>): Promise<Delivery> {
@@ -39,62 +39,28 @@ export class DeliveryService {
 
     async assignDriver(
         deliveryId: string,
-        driverId: string
+        driverUserId: string
     ): Promise<Delivery | null> {
-        try {
-            // Verify driver exists and is available
-            const response = await axios.get(
-                `${this.authServiceUrl}/api/users/${driverId}`
-            );
-            const driver = response.data;
+        const userId = parseInt(driverUserId, 10);
+        if (!Number.isFinite(userId)) return null;
 
-            if (!driver || !driver.is_driver) {
-                return null;
-            }
+        const profile = await this.driverService.getByUserId(userId);
+        if (!profile) return null;
 
-            const delivery = await this.getDeliveryById(deliveryId);
-            if (!delivery) return null;
+        const available = await this.driverService.isDriverAvailable(userId);
+        if (!available) return null;
 
-            delivery.driverId = parseInt(driverId);
-            delivery.status = DeliveryStatus.ASSIGNED;
+        const delivery = await this.getDeliveryById(deliveryId);
+        if (!delivery) return null;
 
-            return await this.deliveryRepository.save(delivery);
-        } catch (error) {
-            console.error("Error assigning driver:", error);
-            return null;
-        }
+        delivery.driverId = userId;
+        delivery.status = DeliveryStatus.ASSIGNED;
+
+        return await this.deliveryRepository.save(delivery);
     }
 
-    async getAvailableDrivers(): Promise<any[]> {
-        try {
-            const response = await axios.get(
-                `${this.authServiceUrl}/api/users/drivers`
-            );
-            return response.data;
-        } catch (error) {
-            console.error("Error getting available drivers:", error);
-            return [];
-        }
-    }
-
-    async updateDriverLocation(
-        driverId: string,
-        location: any
-    ): Promise<boolean> {
-        try {
-            await axios.patch(
-                `${this.authServiceUrl}/api/users/${driverId}/location`,
-                { location }
-            );
-            return true;
-        } catch (error) {
-            console.error("Error updating driver location:", error);
-            return false;
-        }
-    }
-
-    async getDeliveriesByDriver(driverId: number): Promise<Delivery[]> {
-        return await this.deliveryRepository.find({ where: { driverId } });
+    async getDeliveriesByDriver(driverUserId: number): Promise<Delivery[]> {
+        return await this.deliveryRepository.find({ where: { driverId: driverUserId } });
     }
 
     async getActiveDeliveries(): Promise<Delivery[]> {

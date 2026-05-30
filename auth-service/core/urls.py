@@ -8,6 +8,7 @@ from .views import (
     verify_token,
     get_user,
 )
+from .internal_views import get_user_internal, list_driver_users
 
 urlpatterns = [
     path('', home, name='home'),
@@ -16,4 +17,6 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('verify/', verify_token, name='verify'),
     path('users/<int:user_id>/', get_user, name='get_user'),
+    path('internal/users/drivers/', list_driver_users, name='internal_list_drivers'),
+    path('internal/users/<int:user_id>/', get_user_internal, name='internal_get_user'),
 ]

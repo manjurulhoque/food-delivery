@@ -1,10 +1,14 @@
 import { api, DELIVERY_BASE_URL } from "@/lib/services/api";
 import type {
-    AvailableDriver,
     Delivery,
     DeliveryLocation,
     DeliveryStatus,
 } from "@/lib/types/delivery";
+import type {
+    CreateDriverProfilePayload,
+    DriverProfile,
+    UpdateDriverAvailabilityPayload,
+} from "@/lib/types/driver";
 
 export type CreateDeliveryPayload = {
     orderId: string;
@@ -51,12 +55,28 @@ export const deliveryApi = api.injectEndpoints({
             }),
             providesTags: (_result, _error, id) => [{ type: "Delivery", id }],
         }),
-        getAvailableDrivers: builder.query<AvailableDriver[], void>({
+        getDriverProfiles: builder.query<DriverProfile[], void>({
+            query: () => ({
+                url: `${DELIVERY_BASE_URL}/drivers`,
+                method: "GET",
+            }),
+            providesTags: [{ type: "Delivery", id: "DRIVER_LIST" }],
+        }),
+        getAvailableDrivers: builder.query<DriverProfile[], void>({
             query: () => ({
                 url: `${DELIVERY_BASE_URL}/drivers/available`,
                 method: "GET",
             }),
             providesTags: [{ type: "Delivery", id: "AVAILABLE_DRIVERS" }],
+        }),
+        getDriverByUserId: builder.query<DriverProfile, number>({
+            query: (userId) => ({
+                url: `${DELIVERY_BASE_URL}/drivers/${userId}`,
+                method: "GET",
+            }),
+            providesTags: (_result, _error, userId) => [
+                { type: "Delivery", id: `DRIVER_${userId}` },
+            ],
         }),
         createDelivery: builder.mutation<Delivery, CreateDeliveryPayload>({
             query: (body) => ({
@@ -65,6 +85,27 @@ export const deliveryApi = api.injectEndpoints({
                 body,
             }),
             invalidatesTags: [{ type: "Delivery", id: "ACTIVE_LIST" }],
+        }),
+        createDriverProfile: builder.mutation<DriverProfile, CreateDriverProfilePayload>({
+            query: (body) => ({
+                url: `${DELIVERY_BASE_URL}/drivers`,
+                method: "POST",
+                body,
+            }),
+            invalidatesTags: [
+                { type: "Delivery", id: "DRIVER_LIST" },
+                { type: "Delivery", id: "AVAILABLE_DRIVERS" },
+            ],
+        }),
+        syncDriverProfiles: builder.mutation<{ created: number; skipped: number }, void>({
+            query: () => ({
+                url: `${DELIVERY_BASE_URL}/drivers/sync`,
+                method: "POST",
+            }),
+            invalidatesTags: [
+                { type: "Delivery", id: "DRIVER_LIST" },
+                { type: "Delivery", id: "AVAILABLE_DRIVERS" },
+            ],
         }),
         updateDeliveryStatus: builder.mutation<Delivery, UpdateDeliveryStatusPayload>({
             query: ({ id, status }) => ({
@@ -75,6 +116,7 @@ export const deliveryApi = api.injectEndpoints({
             invalidatesTags: (_result, _error, { id }) => [
                 { type: "Delivery", id },
                 { type: "Delivery", id: "ACTIVE_LIST" },
+                { type: "Delivery", id: "AVAILABLE_DRIVERS" },
             ],
         }),
         assignDriver: builder.mutation<Delivery, AssignDriverPayload>({
@@ -86,14 +128,30 @@ export const deliveryApi = api.injectEndpoints({
             invalidatesTags: (_result, _error, { id }) => [
                 { type: "Delivery", id },
                 { type: "Delivery", id: "ACTIVE_LIST" },
+                { type: "Delivery", id: "AVAILABLE_DRIVERS" },
             ],
         }),
-        updateDriverLocation: builder.mutation<{ success: boolean }, UpdateDriverLocationPayload>({
+        updateDriverAvailability: builder.mutation<DriverProfile, UpdateDriverAvailabilityPayload>({
+            query: ({ userId, isOnline }) => ({
+                url: `${DELIVERY_BASE_URL}/drivers/${userId}/availability`,
+                method: "PATCH",
+                body: { isOnline },
+            }),
+            invalidatesTags: (_result, _error, { userId }) => [
+                { type: "Delivery", id: `DRIVER_${userId}` },
+                { type: "Delivery", id: "DRIVER_LIST" },
+                { type: "Delivery", id: "AVAILABLE_DRIVERS" },
+            ],
+        }),
+        updateDriverLocation: builder.mutation<DriverProfile, UpdateDriverLocationPayload>({
             query: ({ driverId, location }) => ({
                 url: `${DELIVERY_BASE_URL}/drivers/${driverId}/location`,
                 method: "PATCH",
                 body: { location },
             }),
+            invalidatesTags: (_result, _error, { driverId }) => [
+                { type: "Delivery", id: `DRIVER_${driverId}` },
+            ],
         }),
     }),
 });
@@ -101,9 +159,14 @@ export const deliveryApi = api.injectEndpoints({
 export const {
     useGetActiveDeliveriesQuery,
     useGetDeliveryByIdQuery,
+    useGetDriverProfilesQuery,
     useGetAvailableDriversQuery,
+    useGetDriverByUserIdQuery,
     useCreateDeliveryMutation,
+    useCreateDriverProfileMutation,
+    useSyncDriverProfilesMutation,
     useUpdateDeliveryStatusMutation,
     useAssignDriverMutation,
+    useUpdateDriverAvailabilityMutation,
     useUpdateDriverLocationMutation,
 } = deliveryApi;

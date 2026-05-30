@@ -4,7 +4,6 @@ import { DeliveryService } from "../services/delivery.service";
 const router = express.Router();
 const deliveryService = new DeliveryService();
 
-// Create a new delivery
 router.post("/", async (req, res) => {
     try {
         const deliveryData = req.body;
@@ -16,7 +15,7 @@ router.post("/", async (req, res) => {
     }
 });
 
-router.get("/active", async (req, res) => {
+router.get("/active", async (_req, res) => {
     try {
         const deliveries = await deliveryService.getActiveDeliveries();
         res.json(deliveries);
@@ -26,17 +25,6 @@ router.get("/active", async (req, res) => {
     }
 });
 
-router.get("/drivers/available", async (req, res) => {
-    try {
-        const drivers = await deliveryService.getAvailableDrivers();
-        res.json(drivers);
-    } catch (error) {
-        console.error("Error getting available drivers:", error);
-        res.status(500).json({ error: "Failed to get available drivers" });
-    }
-});
-
-// Get delivery by ID
 router.get("/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -51,7 +39,6 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-// Update delivery status
 router.patch("/:id/status", async (req, res) => {
     try {
         const { id } = req.params;
@@ -67,40 +54,20 @@ router.patch("/:id/status", async (req, res) => {
     }
 });
 
-// Assign driver to delivery
 router.post("/:id/assign", async (req, res) => {
     try {
         const { id } = req.params;
         const { driverId } = req.body;
         const delivery = await deliveryService.assignDriver(id, driverId);
         if (!delivery) {
-            return res.status(400).json({ error: "Failed to assign driver" });
+            return res.status(400).json({
+                error: "Failed to assign driver (profile missing, offline, or busy)",
+            });
         }
         res.json(delivery);
     } catch (error) {
         console.error("Error assigning driver:", error);
         res.status(500).json({ error: "Failed to assign driver" });
-    }
-});
-
-// Update driver location
-router.patch("/drivers/:id/location", async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { location } = req.body;
-        const success = await deliveryService.updateDriverLocation(
-            id,
-            location
-        );
-        if (!success) {
-            return res
-                .status(404)
-                .json({ error: "Failed to update driver location" });
-        }
-        res.json({ success: true });
-    } catch (error) {
-        console.error("Error updating driver location:", error);
-        res.status(500).json({ error: "Failed to update driver location" });
     }
 });
 
