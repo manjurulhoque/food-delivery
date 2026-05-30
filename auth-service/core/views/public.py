@@ -1,21 +1,19 @@
 import json
-import structlog
-from kafka import KafkaProducer
 
+import structlog
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import views
+from kafka import KafkaProducer
+from rest_framework import status, views
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import RegisterSerializer, UserSerializer
+from ..serializers import RegisterSerializer, UserSerializer
 
 User = get_user_model()
 logger = structlog.get_logger("auth")
 
-# Initialize the Kafka producer
 producer = KafkaProducer(
     bootstrap_servers="kafka:9092",
     value_serializer=lambda v: json.dumps(v).encode("utf-8"),

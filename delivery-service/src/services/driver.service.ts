@@ -6,6 +6,8 @@ import { Driver } from "../models/driver";
 import { Delivery } from "../models/delivery";
 import { DeliveryStatus } from "../types/delivery";
 import type { CreateDriverProfilePayload, DriverLocation } from "../types/driver";
+import type { Location } from "../types/delivery";
+import { haversineKm } from "../utils/location";
 
 const ACTIVE_DELIVERY_STATUSES = [
     DeliveryStatus.ASSIGNED,
@@ -91,6 +93,30 @@ export class DriverService {
         }
 
         return onlineDrivers.filter((d) => !busyDriverIds.includes(d.userId));
+    }
+
+    async pickBestAvailableDriver(pickup: Location): Promise<Driver | null> {
+        const available = await this.getAvailableDrivers();
+        if (available.length === 0) return null;
+
+        const withLocation = available.filter(
+            (d) => d.latitude != null && d.longitude != null
+        );
+        if (withLocation.length === 0) {
+            return available[0];
+        }
+
+        return withLocation.sort((a, b) => {
+            const distA = haversineKm(pickup, {
+                latitude: a.latitude!,
+                longitude: a.longitude!,
+            });
+            const distB = haversineKm(pickup, {
+                latitude: b.latitude!,
+                longitude: b.longitude!,
+            });
+            return distA - distB;
+        })[0];
     }
 
     async isDriverAvailable(userId: number): Promise<boolean> {

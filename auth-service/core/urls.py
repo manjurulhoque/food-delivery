@@ -4,11 +4,12 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     LoginView,
     RegisterView,
-    home,
-    verify_token,
     get_user,
+    get_user_internal,
+    home,
+    list_driver_users,
+    verify_token,
 )
-from .internal_views import get_user_internal, list_driver_users
 
 urlpatterns = [
     path('', home, name='home'),

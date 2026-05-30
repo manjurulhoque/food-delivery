@@ -84,6 +84,9 @@ sequenceDiagram
     PS->>KF: payment.completed or payment.failed
     KF->>OPC: payment.completed
     OPC->>DBo: Order status → PAID
+    KF->>DS: payment.completed
+    DS->>DS: CREATE Delivery + auto-assign driver
+    DS->>KF: delivery.assigned
     KF->>OPC: payment.failed
     OPC->>DBo: Order status → CANCELED
     KF->>NS: payment.failed
@@ -97,8 +100,9 @@ sequenceDiagram
 | Topic | Producer | Consumer(s) | Effect |
 |-------|----------|-------------|--------|
 | `order.placed` | order-service | **order-consumer**, **payment-service**, **notification-service** | Restaurant copy; payment ledger + capture; order-placed notification. |
-| `payment.completed` | payment-service | **order-payment-consumer** | Order status `PENDING` → **`PAID`**. |
+| `payment.completed` | payment-service | **order-payment-consumer**, **delivery-service** | Order status `PENDING` → **`PAID`**; create delivery + auto-assign nearest online driver. |
 | `payment.failed` | payment-service | **order-payment-consumer**, **notification-service** | Order `PENDING` → **`CANCELED`**; customer alert. |
+| `delivery.assigned` | delivery-service | *(consumers TBD)* | Emitted after a driver is auto-assigned to a delivery. |
 | `order.confirmed` | order-consumer | *(none wired yet)* | Emitted after `RestaurantOrder` is created. |
 | `order.updated` | order-service | *(consumers TBD)* | Emitted when a restaurant updates status via `POST /update-order/`. |
 
@@ -143,9 +147,9 @@ Configure channels in `notification-service/.env` (copy from `.env.example`):
 - **SMS** — Twilio (`SMS_ENABLED`, `TWILIO_*`)
 - **Push** — FCM (`PUSH_ENABLED`, `FCM_SERVER_KEY`)
 
-### 7. Delivery service (HTTP API)
+### 7. Delivery service (HTTP + Kafka)
 
-**delivery-service** (Node/TypeORM) owns **delivery jobs** and **driver profiles** (Option B: fleet data lives here, not in auth). Kafka wiring for the order saga is not connected yet.
+**delivery-service** (Node/TypeORM) owns **delivery jobs** and **driver profiles** (Option B: fleet data lives here, not in auth). It consumes **`payment.completed`**, loads order + restaurant details, creates a delivery row, and **auto-assigns** the nearest online available driver. If no driver is free, the delivery stays **`PENDING`** until manual assignment.
 
 **Driver availability** = `isOnline` on the driver profile **and** no active delivery in `ASSIGNED` / `PICKED_UP` / `IN_TRANSIT`.
 
@@ -188,7 +192,7 @@ Frontend RTK Query: `frontend/lib/services/delivery-api.ts`
 
 ### Prerequisites for the saga
 
-- Kafka topics **`order.placed`**, **`payment.completed`**, **`payment.failed`** (see commands below).
+- Kafka topics **`order.placed`**, **`payment.completed`**, **`payment.failed`**, **`delivery.assigned`** (see commands below).
 - **`payment-service`**, **`order-payment-consumer`**, **`order-consumer`**, and **notification-service** must be running.
 - Database **`food_payments`** must exist.
 - Customer JWT must be valid (auth-service access token; NextAuth refreshes it on the frontend).
@@ -263,6 +267,7 @@ docker exec kafka kafka-topics.sh --create --topic order.placed --bootstrap-serv
 docker exec kafka kafka-topics.sh --create --topic payment.completed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 docker exec kafka kafka-topics.sh --create --topic payment.failed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 docker exec kafka kafka-topics.sh --create --topic order.confirmed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+docker exec kafka kafka-topics.sh --create --topic delivery.assigned --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 docker exec kafka kafka-topics.sh --create --topic user.registered --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 ```
 
