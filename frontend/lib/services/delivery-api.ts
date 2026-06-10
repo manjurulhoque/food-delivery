@@ -75,6 +75,15 @@ export const deliveryApi = api.injectEndpoints({
                 { type: "Delivery", id: `ORDER_${orderId}` },
             ],
         }),
+        getDeliveriesByDriver: builder.query<Delivery[], number>({
+            query: (userId) => ({
+                url: `${DELIVERY_BASE_URL}/driver/${userId}`,
+                method: "GET",
+            }),
+            providesTags: (_result, _error, userId) => [
+                { type: "Delivery", id: `DRIVER_DELIVERIES_${userId}` },
+            ],
+        }),
         getDeliveryById: builder.query<Delivery, string>({
             query: (id) => ({
                 url: `${DELIVERY_BASE_URL}/${id}`,
@@ -201,6 +210,7 @@ export const {
     useGetActiveDeliveriesQuery,
     useGetDeliveriesQuery,
     useGetDeliveryByIdQuery,
+    useGetDeliveriesByDriverQuery,
     useGetDeliveryByOrderIdQuery,
     useGetDriverProfilesQuery,
     useGetAvailableDriversQuery,

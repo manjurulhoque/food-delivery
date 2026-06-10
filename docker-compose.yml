@@ -1,4 +1,4 @@
-version: '3.7'
+version: "3.7"
 
 services:
   elasticsearch:
@@ -15,7 +15,7 @@ services:
     networks:
       - food-network
     volumes:
-      - es_data:/usr/share/elasticsearch/data  # Persist data
+      - es_data:/usr/share/elasticsearch/data # Persist data
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.2.0
@@ -83,7 +83,11 @@ services:
     volumes:
       - kafka_data:/bitnami/kafka
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-topics.sh --bootstrap-server localhost:9092 --list",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -96,7 +100,7 @@ services:
       - "8089:8080"
     restart: always
     environment:
-      DYNAMIC_CONFIG_ENABLED: 'true'
+      DYNAMIC_CONFIG_ENABLED: "true"
     volumes:
       - ./kafka-ui/config.yml:/etc/kafkaui/dynamic_config.yaml
     depends_on:
@@ -353,6 +357,7 @@ services:
     container_name: delivery-service
     build:
       context: ./delivery-service
+      dockerfile: Dockerfile
     # ports:
     #   - "5004:5004"
     # No host ports: internal/Kafka only until exposed via Kong
@@ -363,6 +368,10 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - KAFKA_CLIENT_ID=delivery-service
       - KAFKA_GROUP_ID=delivery-service-group
+    volumes:
+      - ./delivery-service/src:/app/src
+      - ./delivery-service/nodemon.json:/app/nodemon.json
+    command: npx nodemon src/index.ts
     depends_on:
       - kafka
       - postgres
@@ -391,11 +400,11 @@ services:
     depends_on:
       - postgres
     ports:
-      - "7000:8000"    # Proxy
-      - "7443:8443"    # Proxy (SSL)
-      - "8001:8001"    # Admin
-      - "7002:8002"    # GUI
-      - "7444:8444"    # Admin (SSL)
+      - "7000:8000" # Proxy
+      - "7443:8443" # Proxy (SSL)
+      - "8001:8001" # Admin
+      - "7002:8002" # GUI
+      - "7444:8444" # Admin (SSL)
     #    environment:
     #      - KONG_DATABASE=postgres
     #      - KONG_PG_HOST=postgres
@@ -404,7 +413,7 @@ services:
     #      - KONG_PG_PASSWORD=postgres
     #      - KONG_PG_DATABASE=kong
     environment:
-      - KONG_DATABASE=off       # Disable database mode
+      - KONG_DATABASE=off # Disable database mode
       - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml # Use kong.yml
       - KONG_ADMIN_LISTEN=0.0.0.0:8001
       - KONG_ADMIN_GUI_URL=http://localhost:7002
@@ -413,7 +422,7 @@ services:
     networks:
       - food-network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:7001/" ]
+      test: ["CMD", "curl", "-f", "http://localhost:7001/"]
       interval: 30s
       timeout: 10s
       retries: 3
