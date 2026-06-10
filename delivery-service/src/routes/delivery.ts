@@ -1,5 +1,6 @@
 import express from "express";
 import { DeliveryService } from "../services/delivery.service";
+import logger from "../config/logger";
 
 const router = express.Router();
 const deliveryService = new DeliveryService();
@@ -17,7 +18,7 @@ router.post("/", async (req, res) => {
         const delivery = await deliveryService.createDelivery(deliveryData);
         res.status(201).json(delivery);
     } catch (error) {
-        console.error("Error creating delivery:", error);
+        logger.error("Error creating delivery:", error);
         res.status(500).json({ error: "Failed to create delivery" });
     }
 });
@@ -27,7 +28,7 @@ router.get("/", async (_req, res) => {
         const deliveries = await deliveryService.listDeliveries();
         res.json(deliveries);
     } catch (error) {
-        console.error("Error listing deliveries:", error);
+        logger.error("Error listing deliveries:", error);
         res.status(500).json({ error: "Failed to list deliveries" });
     }
 });
@@ -39,13 +40,17 @@ router.get("/by-order/:orderId", async (req, res) => {
             return res.status(400).json({ error: "Invalid order id" });
         }
 
-        const delivery = await deliveryService.getDeliveryByOrderId(String(orderId));
+        const delivery = await deliveryService.getDeliveryByOrderId(
+            String(orderId),
+        );
         if (!delivery) {
-            return res.status(404).json({ error: "Delivery not found for order" });
+            return res
+                .status(404)
+                .json({ error: "Delivery not found for order" });
         }
         res.json(delivery);
     } catch (error) {
-        console.error("Error getting delivery by order:", error);
+        logger.error("Error getting delivery by order:", error);
         res.status(500).json({ error: "Failed to get delivery for order" });
     }
 });
@@ -64,7 +69,7 @@ router.post("/by-order/:orderId/assign", async (req, res) => {
 
         const delivery = await deliveryService.assignDriverToOrder(
             orderId,
-            String(driverId)
+            String(driverId),
         );
         if (!delivery) {
             return res.status(400).json({
@@ -73,7 +78,7 @@ router.post("/by-order/:orderId/assign", async (req, res) => {
         }
         res.json(delivery);
     } catch (error) {
-        console.error("Error assigning driver to order:", error);
+        logger.error("Error assigning driver to order:", error);
         res.status(500).json({ error: "Failed to assign driver to order" });
     }
 });
@@ -83,7 +88,7 @@ router.get("/active", async (_req, res) => {
         const deliveries = await deliveryService.getActiveDeliveries();
         res.json(deliveries);
     } catch (error) {
-        console.error("Error getting active deliveries:", error);
+        logger.error("Error getting active deliveries:", error);
         res.status(500).json({ error: "Failed to get active deliveries" });
     }
 });
@@ -100,7 +105,7 @@ router.get("/:id", async (req, res) => {
         }
         res.json(delivery);
     } catch (error) {
-        console.error("Error getting delivery:", error);
+        logger.error("Error getting delivery:", error);
         res.status(500).json({ error: "Failed to get delivery" });
     }
 });
@@ -118,7 +123,7 @@ router.patch("/:id/status", async (req, res) => {
         }
         res.json(delivery);
     } catch (error) {
-        console.error("Error updating delivery status:", error);
+        logger.error("Error updating delivery status:", error);
         res.status(500).json({ error: "Failed to update delivery status" });
     }
 });
@@ -138,7 +143,7 @@ router.post("/:id/assign", async (req, res) => {
         }
         res.json(delivery);
     } catch (error) {
-        console.error("Error assigning driver:", error);
+        logger.error("Error assigning driver:", error);
         res.status(500).json({ error: "Failed to assign driver" });
     }
 });

@@ -10,6 +10,7 @@ import {
     startPaymentCompletedConsumer,
     stopPaymentCompletedConsumer,
 } from "./kafka/consumer";
+import logger from "./config/logger";
 
 dotenv.config();
 
@@ -31,28 +32,28 @@ app.use(
         err: Error,
         req: express.Request,
         res: express.Response,
-        next: express.NextFunction
+        next: express.NextFunction,
     ) => {
-        console.error(err.stack);
+        logger.error(err.stack);
         res.status(500).json({ error: "Something went wrong!" });
-    }
+    },
 );
 
 async function bootstrap() {
     await AppDataSource.initialize();
-    console.log("Database connection established");
+    logger.info("Database connection established");
 
     const deliveryService = new DeliveryService();
     await connectProducer();
     await startPaymentCompletedConsumer(deliveryService);
 
     app.listen(port, () => {
-        console.log(`Delivery service is running on port ${port}`);
+        logger.info(`Delivery service is running on port ${port}`);
     });
 }
 
 bootstrap().catch((error) => {
-    console.error("Failed to start delivery-service:", error);
+    logger.error("Failed to start delivery-service:", error);
     process.exit(1);
 });
 
@@ -62,6 +63,7 @@ async function shutdown() {
     if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
     }
+    logger.info("Delivery service shutdown complete");
     process.exit(0);
 }
 

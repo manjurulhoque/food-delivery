@@ -5,12 +5,10 @@ import { Repository } from "typeorm";
 import { DriverService } from "./driver.service";
 import { OrderClient } from "../clients/order.client";
 import { RestaurantClient } from "../clients/restaurant.client";
-import {
-    buildDeliveryLocation,
-    buildPickupLocation,
-} from "../utils/location";
+import { buildDeliveryLocation, buildPickupLocation } from "../utils/location";
 import type { PaymentCompletedEvent } from "../types/kafka";
 import { publishDeliveryAssigned } from "../kafka/producer";
+import logger from "../config/logger";
 
 export class DeliveryService {
     private deliveryRepository: Repository<Delivery>;
@@ -39,32 +37,34 @@ export class DeliveryService {
     }
 
     async handlePaymentCompleted(
-        event: PaymentCompletedEvent
+        event: PaymentCompletedEvent,
     ): Promise<Delivery | null> {
         const orderId = String(event.order_id);
 
         const existing = await this.getDeliveryByOrderId(orderId);
         if (existing) {
-            console.log(`Delivery already exists for order ${orderId}`);
+            logger.info(`Delivery already exists for order ${orderId}`);
             return existing;
         }
 
         const order = await this.orderClient.getOrder(event.order_id);
         if (!order) {
-            console.error(`Order ${event.order_id} not found for delivery creation`);
+            logger.error(
+                `Order ${event.order_id} not found for delivery creation`,
+            );
             return null;
         }
 
         const restaurant = await this.restaurantClient.getRestaurant(
-            order.restaurant_id
+            order.restaurant_id,
         );
         const pickupLocation = buildPickupLocation(
             order.restaurant_id,
-            restaurant?.address ?? restaurant?.name
+            restaurant?.address ?? restaurant?.name,
         );
         const deliveryLocation = buildDeliveryLocation(
             order.user_id,
-            pickupLocation
+            pickupLocation,
         );
         const estimatedDeliveryTime = new Date(Date.now() + 45 * 60 * 1000);
 
@@ -76,21 +76,20 @@ export class DeliveryService {
             estimatedDeliveryTime,
         });
 
-        const driver = await this.driverService.pickBestAvailableDriver(
-            pickupLocation
-        );
+        const driver =
+            await this.driverService.pickBestAvailableDriver(pickupLocation);
         if (!driver) {
-            console.warn(`No available driver for order ${orderId}`);
+            logger.warn(`No available driver for order ${orderId}`);
             return delivery;
         }
 
         const assigned = await this.assignDriver(
             delivery.id,
-            String(driver.userId)
+            String(driver.userId),
         );
         if (!assigned) {
-            console.warn(
-                `Failed to assign driver ${driver.userId} to order ${orderId}`
+            logger.warn(
+                `Failed to assign driver ${driver.userId} to order ${orderId}`,
             );
             return delivery;
         }
@@ -102,8 +101,8 @@ export class DeliveryService {
             user_id: order.user_id,
             driver_user_id: driver.userId,
         });
-        console.log(
-            `Auto-assigned driver ${driver.userId} to delivery ${delivery.id} (order ${orderId})`
+        logger.info(
+            `Auto-assigned driver ${driver.userId} to delivery ${delivery.id} (order ${orderId})`,
         );
 
         return delivery;
@@ -111,7 +110,7 @@ export class DeliveryService {
 
     async updateDeliveryStatus(
         id: string,
-        status: DeliveryStatus
+        status: DeliveryStatus,
     ): Promise<Delivery | null> {
         const delivery = await this.getDeliveryById(id);
         if (!delivery) return null;
@@ -127,7 +126,7 @@ export class DeliveryService {
     async assignDriver(
         deliveryId: string,
         driverUserId: string,
-        options?: { allowOffline?: boolean }
+        options?: { allowOffline?: boolean },
     ): Promise<Delivery | null> {
         const userId = parseInt(driverUserId, 10);
         if (!Number.isFinite(userId)) return null;
@@ -142,7 +141,8 @@ export class DeliveryService {
         if (busy) return null;
 
         if (!options?.allowOffline) {
-            const available = await this.driverService.isDriverAvailable(userId);
+            const available =
+                await this.driverService.isDriverAvailable(userId);
             if (!available) return null;
         } else if (!profile.isOnline) {
             // Admin may assign offline drivers; still require a profile.
@@ -163,15 +163,15 @@ export class DeliveryService {
         if (!order) return null;
 
         const restaurant = await this.restaurantClient.getRestaurant(
-            order.restaurant_id
+            order.restaurant_id,
         );
         const pickupLocation = buildPickupLocation(
             order.restaurant_id,
-            restaurant?.address ?? restaurant?.name
+            restaurant?.address ?? restaurant?.name,
         );
         const deliveryLocation = buildDeliveryLocation(
             order.user_id,
-            pickupLocation
+            pickupLocation,
         );
 
         return this.createDelivery({
@@ -185,7 +185,7 @@ export class DeliveryService {
 
     async assignDriverToOrder(
         orderId: number,
-        driverUserId: string
+        driverUserId: string,
     ): Promise<Delivery | null> {
         const delivery = await this.ensureDeliveryForOrder(orderId);
         if (!delivery) return null;
@@ -213,7 +213,9 @@ export class DeliveryService {
     }
 
     async getDeliveriesByDriver(driverUserId: number): Promise<Delivery[]> {
-        return await this.deliveryRepository.find({ where: { driverId: driverUserId } });
+        return await this.deliveryRepository.find({
+            where: { driverId: driverUserId },
+        });
     }
 
     async getActiveDeliveries(): Promise<Delivery[]> {

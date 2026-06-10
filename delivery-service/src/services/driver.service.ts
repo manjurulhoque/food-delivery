@@ -2,10 +2,14 @@ import axios from "axios";
 import { Repository } from "typeorm";
 
 import { AppDataSource } from "../config/database";
+import logger from "../config/logger";
 import { Driver } from "../models/driver";
 import { Delivery } from "../models/delivery";
 import { DeliveryStatus } from "../types/delivery";
-import type { CreateDriverProfilePayload, DriverLocation } from "../types/driver";
+import type {
+    CreateDriverProfilePayload,
+    DriverLocation,
+} from "../types/driver";
 import type { Location } from "../types/delivery";
 import { haversineKm } from "../utils/location";
 
@@ -29,7 +33,8 @@ export class DriverService {
     constructor() {
         this.driverRepository = AppDataSource.getRepository(Driver);
         this.deliveryRepository = AppDataSource.getRepository(Delivery);
-        this.authServiceUrl = process.env.AUTH_SERVICE_URL || "http://auth-service:5000";
+        this.authServiceUrl =
+            process.env.AUTH_SERVICE_URL || "http://auth-service:5000";
     }
 
     async getByUserId(userId: number): Promise<Driver | null> {
@@ -63,7 +68,10 @@ export class DriverService {
         return this.driverRepository.save(profile);
     }
 
-    async setAvailability(userId: number, isOnline: boolean): Promise<Driver | null> {
+    async setAvailability(
+        userId: number,
+        isOnline: boolean,
+    ): Promise<Driver | null> {
         const profile = await this.getByUserId(userId);
         if (!profile) return null;
 
@@ -71,7 +79,10 @@ export class DriverService {
         return this.driverRepository.save(profile);
     }
 
-    async updateLocation(userId: number, location: DriverLocation): Promise<Driver | null> {
+    async updateLocation(
+        userId: number,
+        location: DriverLocation,
+    ): Promise<Driver | null> {
         const profile = await this.getByUserId(userId);
         if (!profile) return null;
 
@@ -100,7 +111,7 @@ export class DriverService {
         if (available.length === 0) return null;
 
         const withLocation = available.filter(
-            (d) => d.latitude != null && d.longitude != null
+            (d) => d.latitude != null && d.longitude != null,
         );
         if (withLocation.length === 0) {
             return available[0];
@@ -127,7 +138,10 @@ export class DriverService {
         return !busy.includes(userId);
     }
 
-    async isDriverBusy(userId: number, excludeDeliveryId?: string): Promise<boolean> {
+    async isDriverBusy(
+        userId: number,
+        excludeDeliveryId?: string,
+    ): Promise<boolean> {
         const rows = await this.deliveryRepository
             .createQueryBuilder("delivery")
             .select("delivery.id", "id")
@@ -179,13 +193,17 @@ export class DriverService {
             .andWhere("delivery.driverId IS NOT NULL")
             .getRawMany<{ driverId: number }>();
 
-        return [...new Set(rows.map((row) => Number(row.driverId)).filter(Number.isFinite))];
+        return [
+            ...new Set(
+                rows.map((row) => Number(row.driverId)).filter(Number.isFinite),
+            ),
+        ];
     }
 
     private async fetchAuthUser(userId: number): Promise<AuthUser | null> {
         try {
             const response = await axios.get(
-                `${this.authServiceUrl}/internal/users/${userId}/`
+                `${this.authServiceUrl}/internal/users/${userId}/`,
             );
             return response.data?.data?.user ?? null;
         } catch {
@@ -196,11 +214,11 @@ export class DriverService {
     private async fetchAuthDrivers(): Promise<AuthUser[]> {
         try {
             const response = await axios.get(
-                `${this.authServiceUrl}/internal/users/drivers/`
+                `${this.authServiceUrl}/internal/users/drivers/`,
             );
             return response.data?.data ?? [];
         } catch (error) {
-            console.error("Failed to fetch drivers from auth-service:", error);
+            logger.error("Failed to fetch drivers from auth-service:", error);
             return [];
         }
     }

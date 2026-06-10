@@ -3,6 +3,7 @@ import { Consumer, Kafka } from "kafkajs";
 import { DeliveryService } from "../services/delivery.service";
 import type { PaymentCompletedEvent } from "../types/kafka";
 import { TOPIC_PAYMENT_COMPLETED } from "./topics";
+import logger from "../config/logger";
 
 let consumer: Consumer | null = null;
 
@@ -17,7 +18,7 @@ function parsePaymentCompleted(value: string): PaymentCompletedEvent | null {
 }
 
 export async function startPaymentCompletedConsumer(
-    deliveryService: DeliveryService
+    deliveryService: DeliveryService,
 ): Promise<void> {
     const kafka = new Kafka({
         clientId: process.env.KAFKA_CLIENT_ID || "delivery-service",
@@ -34,7 +35,7 @@ export async function startPaymentCompletedConsumer(
         fromBeginning: false,
     });
 
-    console.log(`Kafka consumer subscribed to ${TOPIC_PAYMENT_COMPLETED}`);
+    logger.info(`Kafka consumer subscribed to ${TOPIC_PAYMENT_COMPLETED}`);
 
     await consumer.run({
         eachMessage: async ({ topic, message }) => {
@@ -43,17 +44,17 @@ export async function startPaymentCompletedConsumer(
 
             const event = parsePaymentCompleted(raw);
             if (!event) {
-                console.warn(`Invalid ${topic} payload: ${raw}`);
+                logger.warn(`Invalid ${topic} payload: ${raw}`);
                 return;
             }
 
-            console.log(`Received ${topic}: order_id=${event.order_id}`);
+            logger.info(`Received ${topic}: order_id=${event.order_id}`);
             try {
                 await deliveryService.handlePaymentCompleted(event);
             } catch (error) {
-                console.error(
+                logger.error(
                     `Failed to handle payment.completed for order ${event.order_id}:`,
-                    error
+                    error,
                 );
             }
         },

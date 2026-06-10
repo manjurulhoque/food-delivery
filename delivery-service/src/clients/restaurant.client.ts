@@ -1,4 +1,5 @@
 import axios from "axios";
+import logger from "../config/logger";
 
 export type RestaurantSummary = {
     id: number;
@@ -13,15 +14,20 @@ export class RestaurantClient {
 
     constructor() {
         this.baseUrl =
-            process.env.RESTAURANT_SERVICE_URL || "http://restaurant-service:5001";
+            process.env.RESTAURANT_SERVICE_URL ||
+            "http://restaurant-service:5001";
     }
 
-    async getRestaurant(restaurantId: number): Promise<RestaurantSummary | null> {
+    async getRestaurant(
+        restaurantId: number,
+    ): Promise<RestaurantSummary | null> {
         try {
-            const response = await axios.get(`${this.baseUrl}/${restaurantId}/`);
+            const response = await axios.get(
+                `${this.baseUrl}/${restaurantId}/`,
+            );
             return response.data?.data ?? null;
         } catch (error) {
-            console.error(`Failed to fetch restaurant ${restaurantId}:`, error);
+            logger.error(`Failed to fetch restaurant ${restaurantId}:`, error);
             return null;
         }
     }
