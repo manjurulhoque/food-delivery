@@ -1,7 +1,13 @@
 import { Kafka, Producer } from "kafkajs";
 
-import type { DeliveryAssignedEvent } from "../types/kafka";
-import { TOPIC_DELIVERY_ASSIGNED } from "./topics";
+import type {
+    DeliveryAssignedEvent,
+    DeliveryStatusUpdatedEvent,
+} from "../types/kafka";
+import {
+    TOPIC_DELIVERY_ASSIGNED,
+    TOPIC_DELIVERY_STATUS_UPDATED,
+} from "./topics";
 
 let producer: Producer | null = null;
 
@@ -21,10 +27,19 @@ export async function connectProducer(): Promise<void> {
 }
 
 export async function publishDeliveryAssigned(
-    event: DeliveryAssignedEvent
+    event: DeliveryAssignedEvent,
 ): Promise<void> {
     await getProducer().send({
         topic: TOPIC_DELIVERY_ASSIGNED,
+        messages: [{ value: JSON.stringify(event) }],
+    });
+}
+
+export async function publishDeliveryStatusUpdated(
+    event: DeliveryStatusUpdatedEvent,
+): Promise<void> {
+    await getProducer().send({
+        topic: TOPIC_DELIVERY_STATUS_UPDATED,
         messages: [{ value: JSON.stringify(event) }],
     });
 }

@@ -12,3 +12,9 @@ export type DeliveryAssignedEvent = {
     user_id: number;
     driver_user_id: number;
 };
+
+export type DeliveryStatusUpdatedEvent = {
+    delivery_id: string;
+    order_id: number;
+    status: string;
+};

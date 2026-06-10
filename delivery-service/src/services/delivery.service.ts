@@ -6,8 +6,14 @@ import { DriverService } from "./driver.service";
 import { OrderClient } from "../clients/order.client";
 import { RestaurantClient } from "../clients/restaurant.client";
 import { buildDeliveryLocation, buildPickupLocation } from "../utils/location";
-import type { PaymentCompletedEvent } from "../types/kafka";
-import { publishDeliveryAssigned } from "../kafka/producer";
+import type {
+    PaymentCompletedEvent,
+    DeliveryStatusUpdatedEvent,
+} from "../types/kafka";
+import {
+    publishDeliveryAssigned,
+    publishDeliveryStatusUpdated,
+} from "../kafka/producer";
 import logger from "../config/logger";
 
 export class DeliveryService {
@@ -120,7 +126,25 @@ export class DeliveryService {
             delivery.actualDeliveryTime = new Date();
         }
 
-        return await this.deliveryRepository.save(delivery);
+        const saved = await this.deliveryRepository.save(delivery);
+
+        // Publish event so order-service (and others) can react
+        const orderId = parseInt(saved.orderId, 10);
+        if (Number.isFinite(orderId)) {
+            const event: DeliveryStatusUpdatedEvent = {
+                delivery_id: saved.id,
+                order_id: orderId,
+                status: status,
+            };
+            publishDeliveryStatusUpdated(event).catch((err) =>
+                logger.error(
+                    `Failed to publish delivery.status.updated for delivery ${saved.id}:`,
+                    err,
+                ),
+            );
+        }
+
+        return saved;
     }
 
     async assignDriver(

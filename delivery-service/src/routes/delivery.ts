@@ -1,6 +1,7 @@
 import express from "express";
 import { DeliveryService } from "../services/delivery.service";
 import logger from "../config/logger";
+import { authMiddleware } from "../middleware/auth";
 
 const router = express.Router();
 const deliveryService = new DeliveryService();
@@ -12,7 +13,7 @@ function isDeliveryId(value: string): boolean {
     return UUID_RE.test(value);
 }
 
-router.post("/", async (req, res) => {
+router.post("/", authMiddleware, async (req, res) => {
     try {
         const deliveryData = req.body;
         const delivery = await deliveryService.createDelivery(deliveryData);
@@ -23,7 +24,7 @@ router.post("/", async (req, res) => {
     }
 });
 
-router.get("/", async (_req, res) => {
+router.get("/", authMiddleware, async (_req, res) => {
     try {
         const deliveries = await deliveryService.listDeliveries();
         res.json(deliveries);
@@ -33,7 +34,7 @@ router.get("/", async (_req, res) => {
     }
 });
 
-router.get("/by-order/:orderId", async (req, res) => {
+router.get("/by-order/:orderId", authMiddleware, async (req, res) => {
     try {
         const orderId = parseInt(req.params.orderId, 10);
         if (!Number.isFinite(orderId)) {
@@ -55,7 +56,7 @@ router.get("/by-order/:orderId", async (req, res) => {
     }
 });
 
-router.post("/by-order/:orderId/assign", async (req, res) => {
+router.post("/by-order/:orderId/assign", authMiddleware, async (req, res) => {
     try {
         const orderId = parseInt(req.params.orderId, 10);
         if (!Number.isFinite(orderId)) {
@@ -83,7 +84,7 @@ router.post("/by-order/:orderId/assign", async (req, res) => {
     }
 });
 
-router.get("/active", async (_req, res) => {
+router.get("/active", authMiddleware, async (_req, res) => {
     try {
         const deliveries = await deliveryService.getActiveDeliveries();
         res.json(deliveries);
@@ -93,11 +94,15 @@ router.get("/active", async (_req, res) => {
     }
 });
 
-router.get("/driver/:userId", async (req, res) => {
+router.get("/driver/:userId", authMiddleware, async (req, res) => {
     try {
         const userId = parseInt(req.params.userId, 10);
         if (!Number.isFinite(userId)) {
             return res.status(400).json({ error: "Invalid user id" });
+        }
+
+        if (req.user && req.user.id !== userId && !req.user.is_superuser) {
+            return res.status(403).json({ error: "Access denied" });
         }
 
         const deliveries = await deliveryService.getDeliveriesByDriver(userId);
@@ -108,7 +113,7 @@ router.get("/driver/:userId", async (req, res) => {
     }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         if (!isDeliveryId(id)) {
@@ -125,7 +130,7 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-router.patch("/:id/status", async (req, res) => {
+router.patch("/:id/status", authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         if (!isDeliveryId(id)) {
@@ -143,7 +148,7 @@ router.patch("/:id/status", async (req, res) => {
     }
 });
 
-router.post("/:id/assign", async (req, res) => {
+router.post("/:id/assign", authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         if (!isDeliveryId(id)) {

@@ -6,10 +6,10 @@ Placing an order is a **choreography saga**: each service reacts to events on it
 
 ### 1. Browse and build the cart (frontend only)
 
-| Step | What happens |
-|------|----------------|
-| Menu discovery | The Next.js app loads menus/restaurants via Kong → **restaurant-service** (`GET /api/restaurants/...`). |
-| Add to bag | Items are stored in the browser **`localStorage`** (`lib/bag.ts`). No backend call yet. |
+| Step            | What happens                                                                                                                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Menu discovery  | The Next.js app loads menus/restaurants via Kong → **restaurant-service** (`GET /api/restaurants/...`).                                                                                                                   |
+| Add to bag      | Items are stored in the browser **`localStorage`** (`lib/bag.ts`). No backend call yet.                                                                                                                                   |
 | Cart / checkout | `/cart` and `/checkout` read the bag client-side and compute subtotal, tax, and delivery fee. **`/checkout` requires a logged-in customer**; guests are prompted to sign in (redirects back via `callbackUrl=/checkout`). |
 
 The access token is attached to API calls from `lib/services/api.ts` (`Authorization: Bearer …`). Login and register honor `?callbackUrl=` so users return to checkout after signing in.
@@ -28,11 +28,11 @@ Content-Type: application/json
 }
 ```
 
-| Component | Role |
-|-----------|------|
-| **Kong** (`:7000`) | Routes `/api/orders/*` → **order-service** (`:5002`), strips the gateway prefix. |
-| **order-service** | Validates JWT (`user_id` from token), writes **`food_orders`** (`Order` + `OrderItem`, status `PENDING`), then publishes **`order.placed`** to Kafka. |
-| **Frontend** | `checkout/page.tsx` → RTK Query `createOrder` → clears bag and shows success toast. |
+| Component          | Role                                                                                                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Kong** (`:7000`) | Routes `/api/orders/*` → **order-service** (`:5002`), strips the gateway prefix.                                                                      |
+| **order-service**  | Validates JWT (`user_id` from token), writes **`food_orders`** (`Order` + `OrderItem`, status `PENDING`), then publishes **`order.placed`** to Kafka. |
+| **Frontend**       | `checkout/page.tsx` → RTK Query `createOrder` → clears bag and shows success toast.                                                                   |
 
 Response: `{ "order_id": <id>, "success": true }` (HTTP 201).
 
@@ -97,14 +97,14 @@ sequenceDiagram
   end
 ```
 
-| Topic | Producer | Consumer(s) | Effect |
-|-------|----------|-------------|--------|
-| `order.placed` | order-service | **order-consumer**, **payment-service**, **notification-service** | Restaurant copy; payment ledger + capture; order-placed notification. |
-| `payment.completed` | payment-service | **order-payment-consumer**, **delivery-service** | Order status `PENDING` → **`PAID`**; create delivery + auto-assign nearest online driver. |
-| `payment.failed` | payment-service | **order-payment-consumer**, **notification-service** | Order `PENDING` → **`CANCELED`**; customer alert. |
-| `delivery.assigned` | delivery-service | *(consumers TBD)* | Emitted after a driver is auto-assigned to a delivery. |
-| `order.confirmed` | order-consumer | *(none wired yet)* | Emitted after `RestaurantOrder` is created. |
-| `order.updated` | order-service | *(consumers TBD)* | Emitted when a restaurant updates status via `POST /update-order/`. |
+| Topic               | Producer         | Consumer(s)                                                       | Effect                                                                                    |
+| ------------------- | ---------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `order.placed`      | order-service    | **order-consumer**, **payment-service**, **notification-service** | Restaurant copy; payment ledger + capture; order-placed notification.                     |
+| `payment.completed` | payment-service  | **order-payment-consumer**, **delivery-service**                  | Order status `PENDING` → **`PAID`**; create delivery + auto-assign nearest online driver. |
+| `payment.failed`    | payment-service  | **order-payment-consumer**, **notification-service**              | Order `PENDING` → **`CANCELED`**; customer alert.                                         |
+| `delivery.assigned` | delivery-service | _(consumers TBD)_                                                 | Emitted after a driver is auto-assigned to a delivery.                                    |
+| `order.confirmed`   | order-consumer   | _(none wired yet)_                                                | Emitted after `RestaurantOrder` is created.                                               |
+| `order.updated`     | order-service    | _(consumers TBD)_                                                 | Emitted when a restaurant updates status via `POST /update-order/`.                       |
 
 Background workers in `docker-compose.yml`:
 
@@ -134,12 +134,12 @@ Payment statuses: `PENDING` → `COMPLETED` | `FAILED`
 
 **notification-service** (FastAPI) consumes Kafka events and sends notifications through pluggable channels:
 
-| Pattern | Module | Role |
-|---------|--------|------|
-| Strategy | `notifications/channels/` | `EmailChannel`, `SmsChannel`, `PushChannel` |
-| Factory | `notifications/factory.py` | Creates channels by type |
-| Facade | `notifications/dispatcher.py` | Dispatches one message to all enabled channels |
-| Events | `notifications/events.py` | Templates for `order.placed`, `payment.failed`, `user.registered` |
+| Pattern  | Module                        | Role                                                              |
+| -------- | ----------------------------- | ----------------------------------------------------------------- |
+| Strategy | `notifications/channels/`     | `EmailChannel`, `SmsChannel`, `PushChannel`                       |
+| Factory  | `notifications/factory.py`    | Creates channels by type                                          |
+| Facade   | `notifications/dispatcher.py` | Dispatches one message to all enabled channels                    |
+| Events   | `notifications/events.py`     | Templates for `order.placed`, `payment.failed`, `user.registered` |
 
 Configure channels in `notification-service/.env` (copy from `.env.example`):
 
@@ -182,13 +182,13 @@ Frontend RTK Query: `frontend/lib/services/delivery-api.ts`
 
 ### Databases involved
 
-| Database | Service | Order-related data |
-|----------|---------|-------------------|
-| `food_orders` | order-service | `Order`, `OrderItem` (statuses include **`PAID`**) |
-| `food_payments` | payment-service | `Payment` (linked by `order_id`) |
-| `food_restaurants` | restaurant-service | `RestaurantOrder` (from Kafka) |
-| `food_users` | auth-service | User identity for JWT |
-| `food_deliveries` | delivery-service | `Delivery`, **`Driver`** (profile, online, location) |
+| Database           | Service            | Order-related data                                   |
+| ------------------ | ------------------ | ---------------------------------------------------- |
+| `food_orders`      | order-service      | `Order`, `OrderItem` (statuses include **`PAID`**)   |
+| `food_payments`    | payment-service    | `Payment` (linked by `order_id`)                     |
+| `food_restaurants` | restaurant-service | `RestaurantOrder` (from Kafka)                       |
+| `food_users`       | auth-service       | User identity for JWT                                |
+| `food_deliveries`  | delivery-service   | `Delivery`, **`Driver`** (profile, online, location) |
 
 ### Prerequisites for the saga
 
@@ -268,6 +268,7 @@ docker exec kafka kafka-topics.sh --create --topic payment.completed --bootstrap
 docker exec kafka kafka-topics.sh --create --topic payment.failed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 docker exec kafka kafka-topics.sh --create --topic order.confirmed --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 docker exec kafka kafka-topics.sh --create --topic delivery.assigned --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+docker exec kafka kafka-topics.sh --create --topic delivery.status.updated --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 docker exec kafka kafka-topics.sh --create --topic user.registered --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
 ```
 
@@ -304,11 +305,13 @@ Or sync via HTTP: `POST http://localhost:7000/api/deliveries/drivers/sync`
 Creates a `Driver` row per auth user with `is_driver=true` (`userId` links to auth). ~1/3 seeded online for testing.
 
 create super-user in auth-service:
+
 ```bash
 docker exec -it auth-service sh
 ```
 
-then type: 
+then type:
+
 ```bash
 python manage.py createsuperuser
 ```

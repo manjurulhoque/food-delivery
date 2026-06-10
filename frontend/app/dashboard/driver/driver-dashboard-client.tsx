@@ -2,15 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { DriverAvailabilityPanel } from "@/components/driver-availability-panel";
 import {
 	useGetDriverByUserIdQuery,
 	useGetDeliveriesByDriverQuery,
+	useUpdateDeliveryStatusMutation,
 } from "@/lib/services/delivery-api";
-import { MapPin, Package, Clock, ChevronRight } from "lucide-react";
-import type { Delivery } from "@/lib/types/delivery";
+import {
+	MapPin,
+	Package,
+	Clock,
+	ChevronRight,
+	PackageCheck,
+	PackageOpen,
+	Hand,
+	Truck,
+} from "lucide-react";
+import type { Delivery, DeliveryStatus } from "@/lib/types/delivery";
+import { toast } from "@/hooks/use-toast";
 
 const STATUS_LABEL: Record<string, string> = {
 	PENDING: "Pending",
@@ -49,50 +61,91 @@ const driverSidebarMenus = [
 	{ label: "Availability", href: "/dashboard/driver/availability" },
 ];
 
-function DriverDeliveryRow({ delivery }: { delivery: Delivery }) {
+function DriverDeliveryRow({
+	delivery,
+	onStatusUpdate,
+	updatingId,
+}: {
+	delivery: Delivery;
+	onStatusUpdate: (id: string, status: DeliveryStatus) => void;
+	updatingId: string | null;
+}) {
+	const nextAction: {
+		status: DeliveryStatus;
+		label: string;
+		icon: React.ComponentType<{ className?: string }>;
+	} | null =
+		delivery.status === "ASSIGNED"
+			? { status: "PICKED_UP" as const, label: "Picked Up", icon: Hand }
+			: delivery.status === "PICKED_UP" ||
+				  delivery.status === "IN_TRANSIT"
+				? {
+						status: "DELIVERED" as const,
+						label: "Delivered",
+						icon: PackageCheck,
+					}
+				: null;
+
 	return (
-		<Link
-			href={`/dashboard/driver/${delivery.id}`}
-			className="flex items-start justify-between gap-4 rounded-xl border border-gray-100 bg-white p-4 transition-colors hover:border-green-200 hover:bg-green-50/30"
-		>
-			<div className="min-w-0 flex-1 space-y-2">
-				<div className="flex flex-wrap items-center gap-2">
-					<span className="font-[Poppins] text-sm font-bold text-gray-900">
-						Order #{delivery.orderId}
-					</span>
-					<span
-						className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${STATUS_COLOR[delivery.status] || "bg-gray-100 text-gray-700"}`}
-					>
-						{STATUS_LABEL[delivery.status] || delivery.status}
+		<div className="rounded-xl border border-gray-100 bg-white p-4 transition-colors hover:border-green-200">
+			<div className="flex items-start justify-between gap-4">
+				<div className="min-w-0 flex-1 space-y-2">
+					<div className="flex flex-wrap items-center gap-2">
+						<span className="font-[Poppins] text-sm font-bold text-gray-900">
+							Order #{delivery.orderId}
+						</span>
+						<span
+							className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${STATUS_COLOR[delivery.status] || "bg-gray-100 text-gray-700"}`}
+						>
+							{STATUS_LABEL[delivery.status] || delivery.status}
+						</span>
+					</div>
+					<div className="flex flex-col gap-1 text-xs text-gray-500">
+						<span className="flex items-center gap-1.5">
+							<MapPin className="h-3.5 w-3.5 shrink-0 text-green-600" />
+							<span className="truncate">
+								{delivery.pickupLocation.address}
+							</span>
+						</span>
+						<span className="flex items-center gap-1.5">
+							<MapPin className="h-3.5 w-3.5 shrink-0 text-red-500" />
+							<span className="truncate">
+								{delivery.deliveryLocation.address}
+							</span>
+						</span>
+					</div>
+					<span className="flex items-center gap-1.5 text-xs text-gray-400">
+						<Clock className="h-3.5 w-3.5" />
+						Est.{" "}
+						{new Date(
+							delivery.estimatedDeliveryTime,
+						).toLocaleTimeString("en-US", {
+							hour: "2-digit",
+							minute: "2-digit",
+						})}
 					</span>
 				</div>
-				<div className="flex flex-col gap-1 text-xs text-gray-500">
-					<span className="flex items-center gap-1.5">
-						<MapPin className="h-3.5 w-3.5 shrink-0 text-green-600" />
-						<span className="truncate">
-							{delivery.pickupLocation.address}
-						</span>
-					</span>
-					<span className="flex items-center gap-1.5">
-						<MapPin className="h-3.5 w-3.5 shrink-0 text-red-500" />
-						<span className="truncate">
-							{delivery.deliveryLocation.address}
-						</span>
-					</span>
-				</div>
-				<span className="flex items-center gap-1.5 text-xs text-gray-400">
-					<Clock className="h-3.5 w-3.5" />
-					Est.{" "}
-					{new Date(
-						delivery.estimatedDeliveryTime,
-					).toLocaleTimeString("en-US", {
-						hour: "2-digit",
-						minute: "2-digit",
-					})}
-				</span>
+				<ChevronRight className="mt-1 h-4 w-4 shrink-0 text-gray-300" />
 			</div>
-			<ChevronRight className="mt-1 h-4 w-4 shrink-0 text-gray-300" />
-		</Link>
+			{nextAction && (
+				<div className="mt-3 flex justify-end border-t border-gray-100 pt-3">
+					<button
+						type="button"
+						disabled={updatingId === delivery.id}
+						onClick={(e) => {
+							e.stopPropagation();
+							onStatusUpdate(delivery.id, nextAction.status);
+						}}
+						className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-green-700 disabled:opacity-60"
+					>
+						<nextAction.icon className="h-3.5 w-3.5" />
+						{updatingId === delivery.id
+							? "Updating…"
+							: `Mark as ${nextAction.label}`}
+					</button>
+				</div>
+			)}
+		</div>
 	);
 }
 
@@ -113,8 +166,36 @@ export default function DriverDashboardClient({
 
 	const { data: deliveries = [], isLoading: deliveriesLoading } =
 		useGetDeliveriesByDriverQuery(userId!, {
-			skip: !userId || !isDriver || !profile?.isOnline,
+			skip: !userId || !isDriver,
 		});
+
+	const [updateStatus] = useUpdateDeliveryStatusMutation();
+	const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+	const handleStatusUpdate = async (
+		deliveryId: string,
+		status: DeliveryStatus,
+	) => {
+		setUpdatingId(deliveryId);
+		try {
+			await updateStatus({
+				id: deliveryId,
+				status: status as DeliveryStatus,
+			}).unwrap();
+			toast({
+				title: "Status updated",
+				description: `Delivery marked as ${STATUS_LABEL[status] || status}.`,
+			});
+		} catch {
+			toast({
+				title: "Could not update status",
+				description: "Please try again.",
+				variant: "destructive",
+			});
+		} finally {
+			setUpdatingId(null);
+		}
+	};
 
 	const activeDeliveries = deliveries.filter(
 		(d) => d.status !== "DELIVERED" && d.status !== "CANCELLED",
@@ -237,6 +318,8 @@ export default function DriverDashboardClient({
 									<DriverDeliveryRow
 										key={delivery.id}
 										delivery={delivery}
+										onStatusUpdate={handleStatusUpdate}
+										updatingId={updatingId}
 									/>
 								))}
 							</div>
