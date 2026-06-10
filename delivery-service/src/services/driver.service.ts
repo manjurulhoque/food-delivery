@@ -127,6 +127,23 @@ export class DriverService {
         return !busy.includes(userId);
     }
 
+    async isDriverBusy(userId: number, excludeDeliveryId?: string): Promise<boolean> {
+        const rows = await this.deliveryRepository
+            .createQueryBuilder("delivery")
+            .select("delivery.id", "id")
+            .where("delivery.driverId = :userId", { userId })
+            .andWhere("delivery.status IN (:...statuses)", {
+                statuses: ACTIVE_DELIVERY_STATUSES,
+            })
+            .getRawMany<{ id: string }>();
+
+        if (!excludeDeliveryId) {
+            return rows.length > 0;
+        }
+
+        return rows.some((row) => row.id !== excludeDeliveryId);
+    }
+
     async syncFromAuth(): Promise<{ created: number; skipped: number }> {
         const authDrivers = await this.fetchAuthDrivers();
         let created = 0;

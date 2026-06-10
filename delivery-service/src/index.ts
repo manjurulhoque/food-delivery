@@ -18,12 +18,13 @@ const port = process.env.PORT || 5004;
 
 app.use(express.json());
 
-app.use("/", deliveryRoutes);
-app.use("/drivers", driverRoutes);
-
 app.get("/health", (req, res) => {
     res.json({ status: "ok" });
 });
+
+// Driver routes must be registered before delivery /:id or "drivers" is treated as a UUID
+app.use("/drivers", driverRoutes);
+app.use("/", deliveryRoutes);
 
 app.use(
     (
