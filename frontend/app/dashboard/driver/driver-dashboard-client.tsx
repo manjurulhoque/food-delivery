@@ -152,7 +152,7 @@ function DriverDeliveryRow({
 export default function DriverDashboardClient({
 	variant = "overview",
 }: {
-	variant?: "overview" | "availability";
+	variant?: "overview" | "availability" | "completed";
 }) {
 	const pathname = usePathname();
 	const { data: session, status } = useSession();
@@ -290,6 +290,49 @@ export default function DriverDashboardClient({
 				</div>
 			) : variant === "availability" ? (
 				<DriverAvailabilityPanel compact />
+			) : variant === "completed" ? (
+				<div className="space-y-5">
+					{deliveriesLoading ? (
+						<div className="space-y-3">
+							{[1, 2, 3].map((i) => (
+								<div
+									key={i}
+									className="h-24 animate-pulse rounded-xl border border-gray-100 bg-gray-50"
+								/>
+							))}
+						</div>
+					) : completedDeliveries.length > 0 ? (
+						<div>
+							<h3 className="mb-3 flex items-center gap-2 font-[Poppins] text-base font-bold text-gray-900">
+								<PackageCheck className="h-4 w-4 text-green-600" />
+								Completed Deliveries
+								<span className="ml-auto text-xs font-normal text-gray-400">
+									{completedDeliveries.length} total
+								</span>
+							</h3>
+							<div className="space-y-3">
+								{completedDeliveries.map((delivery) => (
+									<DriverDeliveryRow
+										key={delivery.id}
+										delivery={delivery}
+										onStatusUpdate={handleStatusUpdate}
+										updatingId={updatingId}
+									/>
+								))}
+							</div>
+						</div>
+					) : (
+						<div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center">
+							<PackageCheck className="mx-auto h-8 w-8 text-gray-300" />
+							<p className="mt-3 font-[Poppins] text-sm font-bold text-gray-700">
+								No completed deliveries yet
+							</p>
+							<p className="mt-1 text-xs text-gray-400">
+								Deliveries you finish will appear here.
+							</p>
+						</div>
+					)}
+				</div>
 			) : (
 				<div className="space-y-5">
 					<DriverAvailabilityPanel compact />
