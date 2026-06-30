@@ -2,7 +2,7 @@ import os
 import structlog
 from datetime import timedelta
 from pathlib import Path
-from .log_handler import CustomTCPLogstashHandler
+from .log_handler import TcpLogstashHandler
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -120,10 +120,10 @@ REST_FRAMEWORK = {
     ),
 }
 
+
 def setup_logging():
-    structlog.contextvars.bind_contextvars(
-        service="auth-service"
-    )
+    structlog.contextvars.bind_contextvars(service="auth-service")
+
 
 setup_logging()
 
@@ -171,19 +171,13 @@ LOGGING = {
         },
         "logstash": {
             "level": "INFO",
-            "class": "auth.log_handler.CustomTCPLogstashHandler",
-            # 'class': 'logstash.LogstashHandler',
-            "host": "logstash",  # IP/name of your Logstash EC2 instance
+            "class": "auth.log_handler.TcpLogstashHandler",
+            "host": "logstash",
             "port": 5044,
-            "version": 1,
-            "message_type": "logstash",
-            "fqdn": True,
-            "tags": ["myapp"],
             "formatter": "json_formatter",
         },
     },
     "loggers": {
-        # Remove the custom logger
         "django": {  # This will log messages from the Django framework
             "handlers": ["myhandler"],
             "level": "INFO",
@@ -195,11 +189,10 @@ LOGGING = {
             "propagate": True,
         },
         "auth": {  # This will log messages from the app
-            "handlers": ["logstash"],
             "level": "INFO",
-            "propagate": True,
+            "propagate": True,  # Propagates to root logger which has logstash
         },
-        # You can log messages from other parts of your application by just using the root logger
+        # The root logger sends everything to both console and logstash
         "": {  # This is the root logger
             "handlers": ["myhandler", "logstash"],
             "level": "DEBUG",  # Set the logging level as needed

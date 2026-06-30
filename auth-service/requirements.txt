@@ -8,6 +8,4 @@ kafka-python==2.0.2
 packaging==24.1
 psycopg2-binary==2.9.9
 PyJWT==2.9.0
-python-logstash==0.4.8
-sqlparse==0.5.1
 typing-extensions==4.12.2
