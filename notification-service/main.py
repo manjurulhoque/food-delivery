@@ -34,6 +34,17 @@ app.add_middleware(
 # Configure logger
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("aiokafka").setLevel(logging.INFO)  # Reduce debug logs
+
+from log_handler import TcpJsonLogstashHandler  # noqa: E402
+
+logstash_handler = TcpJsonLogstashHandler(
+    host="logstash",
+    port=5044,
+    service="notification-service",
+)
+logstash_handler.setLevel(logging.INFO)
+logging.getLogger("").addHandler(logstash_handler)
+
 logger = logging.getLogger(__name__)
 
 

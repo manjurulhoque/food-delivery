@@ -4,9 +4,9 @@ from rest_framework.response import Response
 from rest_framework import status
 import requests
 
-import logging
+import structlog
 
-logger = logging.getLogger("order-service")
+logger = structlog.get_logger("order-service")
 
 
 def get_user_details(user_id: int) -> dict:
@@ -29,8 +29,8 @@ def get_user_id_from_token(request):
             settings.JWT_SECRET_KEY,  # Make sure this matches the auth service secret key
             algorithms=['HS256']  # Use the same algorithm as auth service
         )
-        logger.info(f"Access token successfully retrieved: {decoded_token}")
+        logger.info("Access token successfully retrieved", data=decoded_token, user_id=decoded_token.get('user_id'))
         return decoded_token.get('user_id'), None
     except Exception as e:
-        logger.error(f"Error retrieving access token: {str(e)}")
+        logger.error("Error retrieving access token", data={"error": str(e)})
         return None, Response({"error": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED)

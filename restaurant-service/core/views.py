@@ -132,9 +132,10 @@ class RestaurantMenuCreateAPIView(CreateAPIView):
             return error_response
 
         restaurant_id = self.kwargs.get("restaurant_id")
+        data = request.data.copy()
 
-        request.data["restaurant"] = restaurant_id
-        serializer = self.get_serializer(data=request.data)
+        data["restaurant"] = restaurant_id
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         menu = serializer.save()
         logger.info("Menu created successfully.")

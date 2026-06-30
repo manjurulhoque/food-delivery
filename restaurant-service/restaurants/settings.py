@@ -1,5 +1,7 @@
 import os
+import structlog
 from pathlib import Path
+from .log_handler import CustomTCPLogstashHandler
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -118,6 +120,29 @@ REST_FRAMEWORK = {
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
+
+def setup_logging():
+    structlog.contextvars.bind_contextvars(
+        service="restaurant-service"
+    )
+
+
+setup_logging()
+
+# Structlog settings
+structlog.configure(
+    processors=[
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.dict_tracebacks,
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -126,16 +151,37 @@ LOGGING = {
             "format": "%(levelname)s %(asctime)s %(module)s "
             "%(filename)s %(funcName)s %(lineno)d "
             "%(process)d %(thread)d %(message)s"
-        }
+        },
+        "json_formatter": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+            "foreign_pre_chain": [
+                structlog.contextvars.merge_contextvars,
+                structlog.stdlib.add_log_level,
+                structlog.stdlib.add_logger_name,
+                structlog.stdlib.ExtraAdder(),
+            ],
+        },
     },
     "handlers": {
         "console": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
-        }
+        },
+        "logstash": {
+            "level": "INFO",
+            "class": "restaurants.log_handler.CustomTCPLogstashHandler",
+            "host": "logstash",
+            "port": 5044,
+            "version": 1,
+            "message_type": "logstash",
+            "fqdn": True,
+            "tags": ["restaurant-service"],
+            "formatter": "json_formatter",
+        },
     },
-    "root": {"level": "DEBUG", "handlers": ["console"]},
+    "root": {"level": "DEBUG", "handlers": ["console", "logstash"]},
 }
 
 JWT_SECRET_KEY = "z8B82VSkyLR7IUhDfe4ekI5aaU2DD5gWl08cP0P-pnpZHppnme6L54-ZpgXxnaIHdcMjWlJtPJRyMZzQruUmcA"

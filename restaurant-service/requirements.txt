@@ -9,6 +9,7 @@ idna==3.10
 kafka-python==2.0.2
 psycopg2-binary==2.9.9
 PyJWT==2.9.0
+python-logstash==0.4.8
 requests==2.32.3
 sqlparse==0.5.1
 urllib3==2.2.3

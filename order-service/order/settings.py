@@ -1,6 +1,7 @@
 import os
 import structlog
 from pathlib import Path
+from .log_handler import CustomTCPLogstashHandler
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -110,6 +111,15 @@ JWT_SECRET_KEY = "z8B82VSkyLR7IUhDfe4ekI5aaU2DD5gWl08cP0P-pnpZHppnme6L54-ZpgXxna
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 
+
+def setup_logging():
+    structlog.contextvars.bind_contextvars(
+        service="order-service"
+    )
+
+
+setup_logging()
+
 # Structlog settings
 structlog.configure(
     processors=[
@@ -144,9 +154,20 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "json_formatter",
         },
+        "logstash": {
+            "level": "INFO",
+            "class": "order.log_handler.CustomTCPLogstashHandler",
+            "host": "logstash",
+            "port": 5044,
+            "version": 1,
+            "message_type": "logstash",
+            "fqdn": True,
+            "tags": ["order-service"],
+            "formatter": "json_formatter",
+        },
     },
     "root": {
-        "handlers": ["console"],
+        "handlers": ["console", "logstash"],
         "level": "INFO",
     },
     "loggers": {
@@ -171,7 +192,7 @@ LOGGING = {
             "propagate": False,
         },
         "order-service": {
-            "handlers": ["console"],
+            "handlers": ["console", "logstash"],
             "level": "INFO",
             "propagate": False,
         },

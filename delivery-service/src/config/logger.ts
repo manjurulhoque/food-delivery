@@ -1,4 +1,5 @@
 import winston from "winston";
+import createLogstashWritable from "./logstash-transport";
 
 // Define log levels
 const levels = {
@@ -34,10 +35,6 @@ const colorize = winston.format.colorize({ all: true });
 // Define format for console output
 const consoleFormat = winston.format.combine(
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
-    // winston.format.errors({ stack: true }),
-    // winston.format.printf(
-    //     (info) => `${info.timestamp} ${info.level}: ${info.message}`
-    // ),
     winston.format.json(),
 );
 
@@ -46,6 +43,14 @@ const transports = [
     // Console transport
     new winston.transports.Console({
         format: consoleFormat,
+    }),
+    // Logstash TCP transport
+    new winston.transports.Stream({
+        stream: createLogstashWritable(
+            process.env.LOGSTASH_HOST || "logstash",
+            parseInt(process.env.LOGSTASH_PORT || "5044", 10),
+            "delivery-service",
+        ),
     }),
 ];
 
