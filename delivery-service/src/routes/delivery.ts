@@ -94,6 +94,25 @@ router.get("/active", authMiddleware, async (_req, res) => {
     }
 });
 
+router.get("/driver/:userId/earnings", authMiddleware, async (req, res) => {
+    try {
+        const userId = parseInt(req.params.userId, 10);
+        if (!Number.isFinite(userId)) {
+            return res.status(400).json({ error: "Invalid user id" });
+        }
+
+        if (req.user && req.user.id !== userId && !req.user.is_superuser) {
+            return res.status(403).json({ error: "Access denied" });
+        }
+
+        const earnings = await deliveryService.getDriverEarnings(userId);
+        res.json(earnings);
+    } catch (error) {
+        logger.error("Error getting driver earnings:", error);
+        res.status(500).json({ error: "Failed to get driver earnings" });
+    }
+});
+
 router.get("/driver/:userId", authMiddleware, async (req, res) => {
     try {
         const userId = parseInt(req.params.userId, 10);
@@ -105,11 +124,11 @@ router.get("/driver/:userId", authMiddleware, async (req, res) => {
             return res.status(403).json({ error: "Access denied" });
         }
 
-        const deliveries = await deliveryService.getDeliveriesByDriver(userId);
-        res.json(deliveries);
+        const earnings = await deliveryService.getDriverEarnings(userId);
+        res.json(earnings);
     } catch (error) {
-        logger.error("Error getting deliveries by driver:", error);
-        res.status(500).json({ error: "Failed to get deliveries for driver" });
+        logger.error("Error getting driver earnings:", error);
+        res.status(500).json({ error: "Failed to get driver earnings" });
     }
 });
 

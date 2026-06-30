@@ -124,6 +124,9 @@ export class DeliveryService {
         delivery.status = status;
         if (status === DeliveryStatus.DELIVERED) {
             delivery.actualDeliveryTime = new Date();
+            // Set a default delivery fee of $5.00 when completed
+            // In the future this could be computed from the order total
+            delivery.deliveryFee = 5.0;
         }
 
         const saved = await this.deliveryRepository.save(delivery);
@@ -248,5 +251,77 @@ export class DeliveryService {
                 status: DeliveryStatus.IN_TRANSIT,
             },
         });
+    }
+
+    async getDriverEarnings(driverUserId: number): Promise<{
+        todayEarnings: number;
+        weekEarnings: number;
+        monthEarnings: number;
+        totalEarnings: number;
+        totalCompleted: number;
+        recentEarnings: Array<{
+            deliveryId: string;
+            orderId: string;
+            fee: number;
+            completedAt: Date;
+        }>;
+    }> {
+        const deliveries = await this.deliveryRepository.find({
+            where: { driverId: driverUserId, status: DeliveryStatus.DELIVERED },
+            order: { actualDeliveryTime: "DESC" },
+        });
+
+        const now = new Date();
+        const startOfToday = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+        );
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        let todayEarnings = 0;
+        let weekEarnings = 0;
+        let monthEarnings = 0;
+        let totalEarnings = 0;
+
+        const recentEarnings: Array<{
+            deliveryId: string;
+            orderId: string;
+            fee: number;
+            completedAt: Date;
+        }> = [];
+
+        for (const d of deliveries) {
+            const fee = d.deliveryFee ?? 0;
+            totalEarnings += fee;
+
+            if (d.actualDeliveryTime) {
+                const completedAt = new Date(d.actualDeliveryTime);
+                if (completedAt >= startOfToday) todayEarnings += fee;
+                if (completedAt >= startOfWeek) weekEarnings += fee;
+                if (completedAt >= startOfMonth) monthEarnings += fee;
+            }
+
+            if (recentEarnings.length < 20) {
+                recentEarnings.push({
+                    deliveryId: d.id,
+                    orderId: d.orderId,
+                    fee,
+                    completedAt: d.actualDeliveryTime ?? d.updatedAt,
+                });
+            }
+        }
+
+        return {
+            todayEarnings: Math.round(todayEarnings * 100) / 100,
+            weekEarnings: Math.round(weekEarnings * 100) / 100,
+            monthEarnings: Math.round(monthEarnings * 100) / 100,
+            totalEarnings: Math.round(totalEarnings * 100) / 100,
+            totalCompleted: deliveries.length,
+            recentEarnings,
+        };
     }
 }

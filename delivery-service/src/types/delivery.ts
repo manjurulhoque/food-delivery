@@ -7,6 +7,7 @@ export interface Delivery {
     deliveryLocation: Location;
     estimatedDeliveryTime: Date;
     actualDeliveryTime?: Date;
+    deliveryFee?: number;
     createdAt: Date;
     updatedAt: Date;
 }

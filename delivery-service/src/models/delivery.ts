@@ -45,6 +45,9 @@ export class Delivery {
     @Column({ nullable: true })
     actualDeliveryTime?: Date;
 
+    @Column({ type: "float", nullable: true })
+    deliveryFee?: number;
+
     @CreateDateColumn()
     createdAt!: Date;
 

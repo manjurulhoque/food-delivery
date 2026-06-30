@@ -9,6 +9,7 @@ import { DriverAvailabilityPanel } from "@/components/driver-availability-panel"
 import {
 	useGetDriverByUserIdQuery,
 	useGetDeliveriesByDriverQuery,
+	useGetDriverEarningsQuery,
 	useUpdateDeliveryStatusMutation,
 } from "@/lib/services/delivery-api";
 import {
@@ -152,7 +153,12 @@ function DriverDeliveryRow({
 export default function DriverDashboardClient({
 	variant = "overview",
 }: {
-	variant?: "overview" | "availability" | "completed";
+	variant?:
+		| "overview"
+		| "availability"
+		| "completed"
+		| "earnings"
+		| "payouts";
 }) {
 	const pathname = usePathname();
 	const { data: session, status } = useSession();
@@ -168,6 +174,10 @@ export default function DriverDashboardClient({
 		useGetDeliveriesByDriverQuery(userId!, {
 			skip: !userId || !isDriver,
 		});
+
+	const { data: earningsData } = useGetDriverEarningsQuery(userId!, {
+		skip: !userId || !isDriver,
+	});
 
 	const [updateStatus] = useUpdateDeliveryStatusMutation();
 	const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -231,7 +241,9 @@ export default function DriverDashboardClient({
 		},
 		{
 			label: "Earnings Today",
-			value: "—",
+			value: earningsData
+				? `$${earningsData.todayEarnings.toFixed(2)}`
+				: "—",
 		},
 	];
 
@@ -261,12 +273,22 @@ export default function DriverDashboardClient({
 	return (
 		<DashboardShell
 			roleTitle={
-				variant === "availability" ? "Availability" : "Driver Dashboard"
+				variant === "availability"
+					? "Availability"
+					: variant === "earnings"
+						? "Earnings"
+						: variant === "payouts"
+							? "Payouts"
+							: "Driver Dashboard"
 			}
 			subtitle={
 				variant === "availability"
 					? "Control when you are eligible for new delivery assignments."
-					: "See available delivery tasks, track completed deliveries, and monitor your earnings."
+					: variant === "earnings"
+						? "Track your earnings across different time periods."
+						: variant === "payouts"
+							? "View your payout history and upcoming transfers."
+							: "See available delivery tasks, track completed deliveries, and monitor your earnings."
 			}
 			sidebarMenus={driverSidebarMenus}
 			stats={stats}
@@ -332,6 +354,152 @@ export default function DriverDashboardClient({
 							</p>
 						</div>
 					)}
+				</div>
+			) : variant === "earnings" ? (
+				<div className="space-y-5">
+					{!earningsData ? (
+						<div className="space-y-3">
+							{[1, 2, 3].map((i) => (
+								<div
+									key={i}
+									className="h-24 animate-pulse rounded-xl border border-gray-100 bg-gray-50"
+								/>
+							))}
+						</div>
+					) : (
+						<>
+							{/* Earnings Summary Cards */}
+							<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+								{[
+									{
+										label: "Today",
+										value: `$${earningsData.todayEarnings.toFixed(2)}`,
+										color: "text-green-600",
+									},
+									{
+										label: "This Week",
+										value: `$${earningsData.weekEarnings.toFixed(2)}`,
+										color: "text-blue-600",
+									},
+									{
+										label: "This Month",
+										value: `$${earningsData.monthEarnings.toFixed(2)}`,
+										color: "text-indigo-600",
+									},
+									{
+										label: "Total",
+										value: `$${earningsData.totalEarnings.toFixed(2)}`,
+										color: "text-purple-600",
+									},
+								].map((card) => (
+									<div
+										key={card.label}
+										className="rounded-xl border border-gray-100 bg-white p-4"
+									>
+										<p className="mb-1 text-xs font-bold text-gray-400 uppercase tracking-wide">
+											{card.label}
+										</p>
+										<p
+											className={`font-[Poppins] text-xl font-bold ${card.color}`}
+										>
+											{card.value}
+										</p>
+									</div>
+								))}
+							</div>
+
+							{/* Completed Deliveries Count */}
+							<div className="rounded-xl border border-gray-100 bg-white p-4">
+								<div className="flex items-center gap-3">
+									<PackageCheck className="h-5 w-5 text-green-600" />
+									<div>
+										<p className="font-[Poppins] text-sm font-bold text-gray-900">
+											Total Completed Deliveries
+										</p>
+										<p className="text-xs text-gray-400">
+											{earningsData.totalCompleted}{" "}
+											delivery
+											{earningsData.totalCompleted !== 1
+												? "ies"
+												: "y"}{" "}
+											completed
+										</p>
+									</div>
+								</div>
+							</div>
+
+							{/* Recent Earnings */}
+							{earningsData.recentEarnings.length > 0 && (
+								<div>
+									<h3 className="mb-3 flex items-center gap-2 font-[Poppins] text-base font-bold text-gray-900">
+										<Clock className="h-4 w-4 text-gray-500" />
+										Recent Earnings
+										<span className="ml-auto text-xs font-normal text-gray-400">
+											Last{" "}
+											{earningsData.recentEarnings.length}
+										</span>
+									</h3>
+									<div className="space-y-2">
+										{earningsData.recentEarnings.map(
+											(item) => (
+												<div
+													key={item.deliveryId}
+													className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3"
+												>
+													<div className="min-w-0 flex-1">
+														<p className="text-sm font-bold text-gray-900">
+															Order #
+															{item.orderId}
+														</p>
+														<p className="text-xs text-gray-400">
+															{new Date(
+																item.completedAt,
+															).toLocaleDateString(
+																"en-US",
+																{
+																	month: "short",
+																	day: "numeric",
+																	hour: "2-digit",
+																	minute: "2-digit",
+																},
+															)}
+														</p>
+													</div>
+													<span className="font-[Poppins] text-sm font-bold text-green-600">
+														+${item.fee.toFixed(2)}
+													</span>
+												</div>
+											),
+										)}
+									</div>
+								</div>
+							)}
+						</>
+					)}
+				</div>
+			) : variant === "payouts" ? (
+				<div className="space-y-5">
+					<div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center">
+						<Package className="mx-auto h-8 w-8 text-gray-300" />
+						<p className="mt-3 font-[Poppins] text-sm font-bold text-gray-700">
+							Payout History
+						</p>
+						<p className="mt-1 text-xs text-gray-400">
+							Your completed delivery earnings will be available
+							for payout here. Payouts are processed on a weekly
+							basis.
+						</p>
+					</div>
+					<div className="rounded-xl border border-gray-100 bg-white p-4">
+						<h3 className="mb-2 font-[Poppins] text-sm font-bold text-gray-900">
+							Upcoming Payout
+						</h3>
+						<p className="text-xs text-gray-400">
+							{earningsData
+								? `$${earningsData.totalEarnings.toFixed(2)} available — next payout on Monday`
+								: "No earnings yet"}
+						</p>
+					</div>
 				</div>
 			) : (
 				<div className="space-y-5">
